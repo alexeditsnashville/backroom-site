@@ -630,13 +630,11 @@
       wallBox(-ORIENT.w/2, cy, centerZ, WALL_T, CEIL_H, ORIENT.d, mat.offWhite);
       wallBox(ORIENT.w/2, cy, centerZ, WALL_T, CEIL_H, ORIENT.d, mat.offWhite);
       
-      // South wall (entrance from elevator area) - only for main orientation room
+      // South wall (entrance) - only for main orientation room
       if (centerZ === ORIENT.z) {
         wallBox(ORIENT.x, cy, startZ, ORIENT.w, CEIL_H, WALL_T, mat.offWhite);
-      } else {
-        // For copies, leave south wall open for hallway connection
-        wallBox(ORIENT.x, cy, startZ, ORIENT.w, CEIL_H, WALL_T, mat.offWhite);
       }
+      // For copies at hallway ends, no south wall (hallway connects directly)
       
       // North wall with 3 openings for C, S, P hallways
       const northZ = endZ;
@@ -1189,10 +1187,11 @@ function applyStance(){
             // No teleportation - they just walk through
             
           } else if (completed.size < 3) {
-            // Teleport back to front of orientation room copy at this hallway's end
-            // Position player facing back toward hallway entrance (facing south, away from hallway)
-            camera.position.set(h.hallX, STAND_Y, h.orientCopyZ - 7 + 1.5);
-            yaw = 0; // Face south (back toward hallway)
+            // Teleport back to main orientation room (creates the loop illusion)
+            // Position player at south side of main orientation room, facing north
+            // This makes it appear they've walked into an orientation room copy
+            camera.position.set(0, STAND_Y, ORIENT.z - 7 + 1.5);
+            yaw = Math.PI; // Face north (into orientation room)
             yawTarget = yaw;
             pitch = 0;
             pitchTarget = 0;
