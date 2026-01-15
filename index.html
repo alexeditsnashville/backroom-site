@@ -637,9 +637,14 @@
       wallBox(-ORIENT.w/2, cy, centerZ, WALL_T, CEIL_H, ORIENT.d, mat.offWhite);
       wallBox(ORIENT.w/2, cy, centerZ, WALL_T, CEIL_H, ORIENT.d, mat.offWhite);
       
-      // South wall (entrance) - only for main orientation room
+      // South wall (entrance) - main room has opening from transition corridor, copies are open for hallway
       if (isMainRoom) {
-        wallBox(ORIENT.x, cy, startZ, ORIENT.w, CEIL_H, WALL_T, mat.offWhite);
+        // Opening for transition corridor (centered, 4.4 units wide like corridor)
+        const openingW = 4.6;
+        const leftLen = (-openingW/2) - (-ORIENT.w/2);
+        if (leftLen > 0.25) wallBox((-ORIENT.w/2) + leftLen/2, cy, startZ, leftLen, CEIL_H, WALL_T, mat.offWhite);
+        const rightLen = (ORIENT.w/2) - (openingW/2);
+        if (rightLen > 0.25) wallBox((openingW/2) + rightLen/2, cy, startZ, rightLen, CEIL_H, WALL_T, mat.offWhite);
       }
       // For copies at hallway ends, no south wall (hallway connects directly)
       
@@ -1169,8 +1174,16 @@ function applyStance(){
     let lastTriggeredHall = null;
     
     function handleLoops(){
+      let triggerActive = false;
+      
       for(const h of hallwayInfo){
         if(h.trigger.containsPoint(camera.position)){
+          triggerActive = true;
+          
+          // Prevent multiple triggers on same hallway
+          if (lastTriggeredHall === h.deptKey) return;
+          lastTriggeredHall = h.deptKey;
+          
           // Mark department as visited if not already
           if (!completed.has(h.deptKey)){
             completed.add(h.deptKey);
@@ -1178,10 +1191,6 @@ function applyStance(){
             cp.hallKey = h.deptKey;
             updateCP();
           }
-          
-          // Prevent multiple triggers on same frame
-          if (lastTriggeredHall === h.deptKey) return;
-          lastTriggeredHall = h.deptKey;
           
           // Check if all 3 departments are complete
           if(completed.size === 3 && !completionTriggered){
@@ -1213,8 +1222,11 @@ function applyStance(){
           return;
         }
       }
-      // Reset trigger if player moves away from all triggers
-      lastTriggeredHall = null;
+      
+      // Reset trigger only if player has left ALL trigger zones
+      if (!triggerActive) {
+        lastTriggeredHall = null;
+      }
     }
     // ---- CP shimmer ----
     function updateCPGlow(t){
