@@ -111,7 +111,7 @@
     let PLAYER_HALF_H = 0.25;
 
     const WALK = 3.0;
-    const SPRINT = 4.6;
+    const SPRINT = 8.5;
     const ACCEL = 18.0;
     const DAMP = 11.0;
 
@@ -657,11 +657,11 @@
       addHeaderSign('SURVEILLANCE', HALL_X.SURVEILLANCE, northZ-0.24);
       addHeaderSign('PURSUANCE', HALL_X.PURSUANCE, northZ-0.24);
 
-      // corridor from lobby down to tunnel
-      floorPlane(0,-9.0, 4.4, 10.0, mat.offWhite);
-      ceilPlane(0,-9.0, 4.4, 10.0, CEIL_H, mat.ceiling);
-      wallBox(-2.2,cy,-9.0, WALL_T, CEIL_H, 10.0, mat.offWhite);
-      wallBox( 2.2,cy,-9.0, WALL_T, CEIL_H, 10.0, mat.offWhite);
+      // Small transition corridor from lobby to elevator area (reduced from z=-9.0 to z=-4.0)
+      floorPlane(0,-2.0, 4.4, 4.0, mat.offWhite);
+      ceilPlane(0,-2.0, 4.4, 4.0, CEIL_H, mat.ceiling);
+      wallBox(-2.2,cy,-2.0, WALL_T, CEIL_H, 4.0, mat.offWhite);
+      wallBox( 2.2,cy,-2.0, WALL_T, CEIL_H, 4.0, mat.offWhite);
     }
 
     const deptList=[
@@ -734,14 +734,15 @@
 
     // ---- Massive Chamber ----
     let chamberBuilt = false;
+    let centerAccentWall = null; // Store reference for highlighting on completion
 
     function buildMassiveChamber(){
       if (chamberBuilt) return;
       chamberBuilt = true;
 
       const chamberStartZ = LOBBY.d/2 + HALL.len;
-      const chamberW = 36;
-      const chamberD = 28;
+      const chamberW = 40;
+      const chamberD = 40;
       const chamberH = 3.2; // taller than hallways for dramatic effect
       const chamberCenterZ = chamberStartZ + chamberD/2;
 
@@ -751,31 +752,60 @@
 
       const cy = chamberH/2;
 
-      // Back wall
-      wallBox(0, cy, chamberStartZ + chamberD, chamberW, chamberH, WALL_T, mat.offWhite);
+      // Back wall with three hallway openings
+      const backZ = chamberStartZ + chamberD;
+      const openingW = HALL.w + 0.2; // Slightly wider than hallway
+      
+      // Left section (before COMPLIANCE opening)
+      const leftStart = -chamberW/2;
+      const leftEnd = HALL_X.COMPLIANCE - openingW/2;
+      if (leftEnd - leftStart > 0.25) {
+        wallBox((leftStart + leftEnd)/2, cy, backZ, leftEnd - leftStart, chamberH, WALL_T, mat.offWhite);
+      }
+      
+      // Middle-left section (between COMPLIANCE and SURVEILLANCE)
+      const midLeft1Start = HALL_X.COMPLIANCE + openingW/2;
+      const midLeft1End = HALL_X.SURVEILLANCE - openingW/2;
+      if (midLeft1End - midLeft1Start > 0.25) {
+        wallBox((midLeft1Start + midLeft1End)/2, cy, backZ, midLeft1End - midLeft1Start, chamberH, WALL_T, mat.offWhite);
+      }
+      
+      // Middle-right section (between SURVEILLANCE and PURSUANCE)
+      const midRight1Start = HALL_X.SURVEILLANCE + openingW/2;
+      const midRight1End = HALL_X.PURSUANCE - openingW/2;
+      if (midRight1End - midRight1Start > 0.25) {
+        wallBox((midRight1Start + midRight1End)/2, cy, backZ, midRight1End - midRight1Start, chamberH, WALL_T, mat.offWhite);
+      }
+      
+      // Right section (after PURSUANCE opening)
+      const rightStart = HALL_X.PURSUANCE + openingW/2;
+      const rightEnd = chamberW/2;
+      if (rightEnd - rightStart > 0.25) {
+        wallBox((rightStart + rightEnd)/2, cy, backZ, rightEnd - rightStart, chamberH, WALL_T, mat.offWhite);
+      }
 
       // Side walls
       wallBox(-chamberW/2, cy, chamberCenterZ, WALL_T, chamberH, chamberD, mat.offWhite);
       wallBox(chamberW/2, cy, chamberCenterZ, WALL_T, chamberH, chamberD, mat.offWhite);
 
-      // Visual references to the three departments - colored accent walls
+      // Visual references to the three departments - colored accent walls on back wall
       // COMPLIANCE (left) - green
       const leftAccentW = 8;
       const leftAccent = new THREE.Mesh(
         new THREE.BoxGeometry(leftAccentW, chamberH * 0.6, 0.08),
         mat.green
       );
-      leftAccent.position.set(-chamberW/2 + leftAccentW/2 + 2, chamberH * 0.5, chamberStartZ + chamberD - 0.12);
+      leftAccent.position.set(HALL_X.COMPLIANCE, chamberH * 0.5, backZ - 0.12);
       world.add(leftAccent);
 
       // SURVEILLANCE (center) - charcoal
       const centerAccentW = 10;
-      const centerAccent = new THREE.Mesh(
+      centerAccentWall = new THREE.Mesh(
         new THREE.BoxGeometry(centerAccentW, chamberH * 0.6, 0.08),
         mat.charcoal
       );
-      centerAccent.position.set(0, chamberH * 0.5, chamberStartZ + chamberD - 0.12);
-      world.add(centerAccent);
+      centerAccentWall.position.set(HALL_X.SURVEILLANCE, chamberH * 0.5, backZ - 0.12);
+      world.add(centerAccentWall);
 
       // PURSUANCE (right) - navy
       const rightAccentW = 8;
@@ -783,17 +813,17 @@
         new THREE.BoxGeometry(rightAccentW, chamberH * 0.6, 0.08),
         mat.navy
       );
-      rightAccent.position.set(chamberW/2 - rightAccentW/2 - 2, chamberH * 0.5, chamberStartZ + chamberD - 0.12);
+      rightAccent.position.set(HALL_X.PURSUANCE, chamberH * 0.5, backZ - 0.12);
       world.add(rightAccent);
 
       // Department labels on the accent walls
-      addHeaderSign('COMPLIANCE', -chamberW/2 + leftAccentW/2 + 2, chamberStartZ + chamberD - 0.35);
-      addHeaderSign('SURVEILLANCE', 0, chamberStartZ + chamberD - 0.35);
-      addHeaderSign('PURSUANCE', chamberW/2 - rightAccentW/2 - 2, chamberStartZ + chamberD - 0.35);
+      addHeaderSign('COMPLIANCE', HALL_X.COMPLIANCE, backZ - 0.35);
+      addHeaderSign('SURVEILLANCE', HALL_X.SURVEILLANCE, backZ - 0.35);
+      addHeaderSign('PURSUANCE', HALL_X.PURSUANCE, backZ - 0.35);
 
       // Chamber lighting - more dramatic
-      for(let i=0; i<5; i++){
-        const x = -12 + i * 6;
+      for(let i=0; i<6; i++){
+        const x = -15 + i * 6;
         const z = chamberCenterZ;
         const panel = new THREE.Mesh(
           new THREE.BoxGeometry(3.5, 0.06, 1.2),
@@ -892,12 +922,8 @@
     buildLobby();
     for(const d of deptList) buildHallway(d);
     buildElevator();
+    buildMassiveChamber(); // Always build chamber at startup
     updateCP();
-    
-    // Build chamber when all hallways are complete
-    if (allComplete()) {
-      buildMassiveChamber();
-    }
 
     // ---- Input / pointer lock ----
     statusEl.textContent='READY';
@@ -909,7 +935,7 @@
     let yawTarget = yaw;
     let pitchTarget = pitch;
     const MOUSE_SENS = 0.0019;     // smaller = slower
-    const LOOK_SMOOTH = 18.0;      // bigger = snappier (still smooth)
+    const LOOK_SMOOTH = 8.0;       // bigger = snappier (still smooth)
 
     function onMouseMove(e){
       yawTarget   -= (e.movementX || 0) * MOUSE_SENS;
@@ -1085,6 +1111,8 @@ function applyStance(){
     }
 
      // ---- Hall looping ----
+    let completionTriggered = false;
+    
     function handleLoops(){
       for(const h of hallwayInfo){
         if(h.trigger.containsPoint(camera.position)){
@@ -1096,14 +1124,37 @@ function applyStance(){
           }
           
           // Check if all 3 departments are complete
-          if(completed.size === 3){
-            // All departments complete - build chamber and allow player to continue
-            buildMassiveChamber();
-            // No teleport - player continues walking into the chamber
-          } else {
+          if(completed.size === 3 && !completionTriggered){
+            completionTriggered = true;
+            
+            // Teleport to center of chamber
+            const chamberStartZ = LOBBY.d/2 + HALL.len;
+            const chamberCenterZ = chamberStartZ + 20; // Center of 40-unit deep chamber
+            camera.position.set(0, STAND_Y, chamberCenterZ);
+            yaw = Math.PI; // Face back toward hallways
+            yawTarget = yaw;
+            pitch = 0;
+            pitchTarget = 0;
+            vel.set(0,0,0);
+            
+            // Highlight center accent wall with emissive glow
+            if (centerAccentWall && centerAccentWall.material) {
+              centerAccentWall.material.emissive = new THREE.Color(0x5e5a54);
+              centerAccentWall.material.emissiveIntensity = 0.65;
+            }
+            
+            // Add a special spotlight on the center wall
+            const completionLight = new THREE.SpotLight(0xffffff, 1.2, 30, Math.PI/6, 0.3, 1.5);
+            completionLight.position.set(0, 2.5, chamberCenterZ + 10);
+            completionLight.target.position.set(0, 1.6, chamberStartZ + 40);
+            scene.add(completionLight);
+            scene.add(completionLight.target);
+            
+          } else if (completed.size < 3) {
             // Teleport back to lobby for the infinite hallway illusion
             camera.position.set(0, CROUCH_Y, (LOBBY.d/2) - 1.8);
             yaw=Math.PI;
+            yawTarget = yaw;
             vel.set(0,0,0);
           }
           return;
