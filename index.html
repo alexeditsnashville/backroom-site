@@ -981,10 +981,12 @@ function applyStance(){
             updateCP();
           }
           // Check if all 3 departments are complete
-          if(completed.size === 3){
-            // Show the massive chamber! 
-            showMassiveChamber();
-          } else {
+if(completed.size === 3){
+  // All departments complete - transition to end
+  camera.position.set(0, STAND_Y, 50);
+  yaw=Math.PI;
+  vel. set(0,0,0);
+} else {
             // Teleport back to lobby for the infinite hallway illusion
             camera.position.set(0, CROUCH_Y, (LOBBY.d/2) - 1.8);
             yaw=Math.PI;
