@@ -618,9 +618,10 @@
     }
 
     function buildOrientationRoom(centerZ = ORIENT.z, withFloor = true, withCeiling = true, isMainRoom = true){
-      // Orientation room spans 14 units (z = centerZ-7 to centerZ+7)
-      const startZ = centerZ - 7;
-      const endZ = centerZ + 7;
+      // Orientation room spans ORIENT.d units (z = centerZ-ORIENT.d/2 to centerZ+ORIENT.d/2)
+      const halfDepth = ORIENT.d/2;
+      const startZ = centerZ - halfDepth;
+      const endZ = centerZ + halfDepth;
       
       // Floor and ceiling
       if (withFloor) {
@@ -708,7 +709,7 @@
 
     function buildHallway(dept){
       const hallX = HALL_X[dept.key];
-      const startZ = ORIENT.z + 7; // Start at north wall of orientation room
+      const startZ = ORIENT.z + ORIENT.d/2; // Start at north wall of orientation room
       const endZ = startZ + HALL.len;
       
       // floor/ceil
@@ -772,7 +773,7 @@
       }
       
       // Build orientation room copy at hallway end
-      const orientCopyZ = endZ + 7; // Center of orientation copy
+      const orientCopyZ = endZ + ORIENT.d/2; // Center of orientation copy
       buildOrientationRoom(orientCopyZ, true, true, false); // isMainRoom=false
 
       // loop trigger at hallway end
@@ -792,7 +793,7 @@
       if (chamberBuilt) return;
       chamberBuilt = true;
 
-      const chamberStartZ = ORIENT.z + 7 + HALL.len; // After hallway ends
+      const chamberStartZ = ORIENT.z + ORIENT.d/2 + HALL.len; // After hallway ends
       const chamberW = 40;
       const chamberD = CHAMBER_D;
       const chamberH = 3.2; // taller than hallways for dramatic effect
@@ -984,11 +985,11 @@
     let yaw = Math.PI; // face elevator doors
     let pitch = 0;
 
-    // Smooth mouse look targets (restores the "butter" feel)
+    // Smooth mouse look targets
     let yawTarget = yaw;
     let pitchTarget = pitch;
     const MOUSE_SENS = 0.0019;     // smaller = slower
-    const LOOK_SMOOTH = 8;         // smaller = snappier (reduced from 18 for faster response)
+    const LOOK_SMOOTH = 8;         // smaller = snappier (8 provides responsive mouse feel)
 
     function onMouseMove(e){
       yawTarget   -= (e.movementX || 0) * MOUSE_SENS;
@@ -1196,7 +1197,7 @@ function applyStance(){
             // Teleport back to main orientation room (creates the loop illusion)
             // Position player at south side of main orientation room, facing north
             // This makes it appear they've walked into an orientation room copy
-            camera.position.set(0, STAND_Y, ORIENT.z - 7 + TELEPORT_OFFSET);
+            camera.position.set(0, STAND_Y, ORIENT.z - ORIENT.d/2 + TELEPORT_OFFSET);
             yaw = Math.PI; // Face north (into orientation room)
             yawTarget = yaw;
             pitch = 0;
