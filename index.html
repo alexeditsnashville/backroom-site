@@ -733,6 +733,7 @@
     }
 
     // ---- Massive Chamber ----
+    const CHAMBER_D = 26; // Chamber depth
     let chamberBuilt = false;
     let centerAccentWall = null; // Store reference for highlighting on completion
 
@@ -742,7 +743,7 @@
 
       const chamberStartZ = LOBBY.d/2 + HALL.len;
       const chamberW = 40;
-      const chamberD = 26; // Adjusted to fit z=106-132 range (close to specified 105-130)
+      const chamberD = CHAMBER_D; // Adjusted depth - chamber spans z=106-132
       const chamberH = 3.2; // taller than hallways for dramatic effect
       const chamberCenterZ = chamberStartZ + chamberD/2;
 
@@ -1129,7 +1130,7 @@ function applyStance(){
             
             // Teleport to center of chamber
             const chamberStartZ = LOBBY.d/2 + HALL.len;
-            const chamberCenterZ = chamberStartZ + 13; // Center of 26-unit deep chamber
+            const chamberCenterZ = chamberStartZ + CHAMBER_D/2;
             camera.position.set(0, STAND_Y, chamberCenterZ);
             yaw = Math.PI; // Face back toward hallways
             yawTarget = yaw;
@@ -1146,7 +1147,7 @@ function applyStance(){
             // Add a special spotlight on the center wall
             const completionLight = new THREE.SpotLight(0xffffff, 1.2, 30, Math.PI/6, 0.3, 1.5);
             completionLight.position.set(0, 2.5, chamberCenterZ + 5);
-            completionLight.target.position.set(0, 1.6, chamberStartZ + 26);
+            completionLight.target.position.set(0, 1.6, chamberStartZ + CHAMBER_D);
             scene.add(completionLight);
             scene.add(completionLight.target);
             
