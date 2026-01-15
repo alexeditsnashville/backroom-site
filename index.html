@@ -680,8 +680,8 @@
       floorPlane(hallX,startZ+HALL.len/2, HALL.w, HALL.len+0.4, dept.floor);
       ceilPlane(hallX,startZ+HALL.len/2, HALL.w, HALL.len+0.4, CEIL_H, mat.ceiling);
       const cy=CEIL_H/2;
-      // walls
-      wallBox(hallX,cy,endZ, HALL.w, CEIL_H, WALL_T, mat.offWhite);
+      // walls - remove end wall to allow chamber access
+      // wallBox(hallX,cy,endZ, HALL.w, CEIL_H, WALL_T, mat.offWhite);
       wallBox(hallX-HALL.w/2,cy,startZ+HALL.len/2, WALL_T, CEIL_H, HALL.len+0.4, mat.offWhite);
       wallBox(hallX+HALL.w/2,cy,startZ+HALL.len/2, WALL_T, CEIL_H, HALL.len+0.4, mat.offWhite);
 
@@ -730,6 +730,115 @@
         new THREE.Vector3(hallX+HALL.w/2-0.4,2.0,endZ-0.2)
       );
       hallwayInfo.push({ deptKey:dept.key, hallX, startZ, endZ, trigger });
+    }
+
+    // ---- Massive Chamber ----
+    let chamberBuilt = false;
+
+    function buildMassiveChamber(){
+      if (chamberBuilt) return;
+      chamberBuilt = true;
+
+      const chamberStartZ = LOBBY.d/2 + HALL.len;
+      const chamberW = 36;
+      const chamberD = 28;
+      const chamberH = 3.2; // taller than hallways for dramatic effect
+      const chamberCenterZ = chamberStartZ + chamberD/2;
+
+      // Floor and ceiling
+      floorPlane(0, chamberCenterZ, chamberW, chamberD, mat.offWhite);
+      ceilPlane(0, chamberCenterZ, chamberW, chamberD, chamberH, mat.ceiling);
+
+      const cy = chamberH/2;
+
+      // Back wall
+      wallBox(0, cy, chamberStartZ + chamberD, chamberW, chamberH, WALL_T, mat.offWhite);
+
+      // Side walls
+      wallBox(-chamberW/2, cy, chamberCenterZ, WALL_T, chamberH, chamberD, mat.offWhite);
+      wallBox(chamberW/2, cy, chamberCenterZ, WALL_T, chamberH, chamberD, mat.offWhite);
+
+      // Visual references to the three departments - colored accent walls
+      // COMPLIANCE (left) - green
+      const leftAccentW = 8;
+      const leftAccent = new THREE.Mesh(
+        new THREE.BoxGeometry(leftAccentW, chamberH * 0.6, 0.08),
+        mat.green
+      );
+      leftAccent.position.set(-chamberW/2 + leftAccentW/2 + 2, chamberH * 0.5, chamberStartZ + chamberD - 0.12);
+      world.add(leftAccent);
+
+      // SURVEILLANCE (center) - charcoal
+      const centerAccentW = 10;
+      const centerAccent = new THREE.Mesh(
+        new THREE.BoxGeometry(centerAccentW, chamberH * 0.6, 0.08),
+        mat.charcoal
+      );
+      centerAccent.position.set(0, chamberH * 0.5, chamberStartZ + chamberD - 0.12);
+      world.add(centerAccent);
+
+      // PURSUANCE (right) - navy
+      const rightAccentW = 8;
+      const rightAccent = new THREE.Mesh(
+        new THREE.BoxGeometry(rightAccentW, chamberH * 0.6, 0.08),
+        mat.navy
+      );
+      rightAccent.position.set(chamberW/2 - rightAccentW/2 - 2, chamberH * 0.5, chamberStartZ + chamberD - 0.12);
+      world.add(rightAccent);
+
+      // Department labels on the accent walls
+      addHeaderSign('COMPLIANCE', -chamberW/2 + leftAccentW/2 + 2, chamberStartZ + chamberD - 0.35);
+      addHeaderSign('SURVEILLANCE', 0, chamberStartZ + chamberD - 0.35);
+      addHeaderSign('PURSUANCE', chamberW/2 - rightAccentW/2 - 2, chamberStartZ + chamberD - 0.35);
+
+      // Chamber lighting - more dramatic
+      for(let i=0; i<5; i++){
+        const x = -12 + i * 6;
+        const z = chamberCenterZ;
+        const panel = new THREE.Mesh(
+          new THREE.BoxGeometry(3.5, 0.06, 1.2),
+          new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.25,
+            metalness: 0.0,
+            emissive: 0xffffff,
+            emissiveIntensity: 0.32
+          })
+        );
+        panel.position.set(x, chamberH - 0.20, z);
+        world.add(panel);
+
+        const light = new THREE.PointLight(0xffffff, 0.45, 28, 1.4);
+        light.position.set(x, chamberH - 0.50, z);
+        scene.add(light);
+      }
+
+      // Transition markers at each hallway entrance to the chamber
+      const transitionZ = chamberStartZ - 0.5;
+      
+      // Left hallway transition (COMPLIANCE - green)
+      const leftTrans = new THREE.Mesh(
+        new THREE.BoxGeometry(HALL.w - 0.4, 0.08, 1.0),
+        mat.green
+      );
+      leftTrans.position.set(HALL_X.COMPLIANCE, 0.04, transitionZ);
+      world.add(leftTrans);
+
+      // Center hallway transition (SURVEILLANCE - charcoal)
+      const centerTrans = new THREE.Mesh(
+        new THREE.BoxGeometry(HALL.w - 0.4, 0.08, 1.0),
+        mat.charcoal
+      );
+      centerTrans.position.set(HALL_X.SURVEILLANCE, 0.04, transitionZ);
+      world.add(centerTrans);
+
+      // Right hallway transition (PURSUANCE - navy)
+      const rightTrans = new THREE.Mesh(
+        new THREE.BoxGeometry(HALL.w - 0.4, 0.08, 1.0),
+        mat.navy
+      );
+      rightTrans.position.set(HALL_X.PURSUANCE, 0.04, transitionZ);
+      world.add(rightTrans);
     }
 
     // ---- Counter Program door group ----
@@ -784,6 +893,11 @@
     for(const d of deptList) buildHallway(d);
     buildElevator();
     updateCP();
+    
+    // Build chamber when all hallways are complete
+    if (allComplete()) {
+      buildMassiveChamber();
+    }
 
     // ---- Input / pointer lock ----
     statusEl.textContent='READY';
@@ -973,20 +1087,20 @@ function applyStance(){
      // ---- Hall looping ----
     function handleLoops(){
       for(const h of hallwayInfo){
-        if(h.trigger. containsPoint(camera.position)){
-          if(! completed.has(h. deptKey)){
+        if(h.trigger.containsPoint(camera.position)){
+          if (!completed.has(h.deptKey)){
             completed.add(h.deptKey);
             saveCompletion();
             cp.hallKey=h.deptKey;
             updateCP();
           }
+          
           // Check if all 3 departments are complete
-if(completed.size === 3){
-  // All departments complete - transition to end
-  camera.position.set(0, STAND_Y, 50);
-  yaw=Math.PI;
-  vel. set(0,0,0);
-} else {
+          if(completed.size === 3){
+            // All departments complete - build chamber and allow player to continue
+            buildMassiveChamber();
+            // No teleport - player continues walking into the chamber
+          } else {
             // Teleport back to lobby for the infinite hallway illusion
             camera.position.set(0, CROUCH_Y, (LOBBY.d/2) - 1.8);
             yaw=Math.PI;
@@ -1050,9 +1164,9 @@ if(completed.size === 3){
 
       tryMove(vel.x * dt, vel.z * dt);
 
-      // hard bounds
+      // hard bounds - extend z to allow chamber access
       camera.position.x=Math.max(-22,Math.min(22,camera.position.x));
-      camera.position.z=Math.max(-28,Math.min(112,camera.position.z));
+      camera.position.z=Math.max(-28,Math.min(140,camera.position.z));
 
       updateElevDoors(dt);
       if (typeof elev.drawIndicator === 'function') elev.drawIndicator(now);
