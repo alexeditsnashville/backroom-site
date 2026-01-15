@@ -722,7 +722,7 @@
       ceilPlane(hallX, startZ + HALL.len/2, HALL.w, HALL.len + 0.4, CEIL_H, mat.ceiling);
       const cy = CEIL_H/2;
       
-      // walls - NO end wall to allow walking into orientation room copy or chamber
+      // walls - NO end wall to allow walking into shared orientation room copy
       wallBox(hallX - HALL.w/2, cy, startZ + HALL.len/2, WALL_T, CEIL_H, HALL.len + 0.4, mat.offWhite);
       wallBox(hallX + HALL.w/2, cy, startZ + HALL.len/2, WALL_T, CEIL_H, HALL.len + 0.4, mat.offWhite);
 
@@ -776,17 +776,13 @@
         plaque.rotation.y = rotY;
         world.add(plaque);
       }
-      
-      // Build orientation room copy at hallway end (these create the infinite loop illusion)
-      const orientCopyZ = endZ + ORIENT.d/2; // Center of orientation copy
-      buildOrientationRoom(orientCopyZ, true, true, false); // isMainRoom=false
 
       // Mark where this hallway ends (trigger for completion tracking)
       const trigger = new THREE.Box3(
         new THREE.Vector3(hallX - HALL.w/2 + 0.4, 0, endZ - 2.2),
         new THREE.Vector3(hallX + HALL.w/2 - 0.4, 2.0, endZ - 0.2)
       );
-      hallwayInfo.push({ deptKey: dept.key, hallX, startZ, endZ, trigger, orientCopyZ });
+      hallwayInfo.push({ deptKey: dept.key, hallX, startZ, endZ, trigger });
     }
 
     // ---- Massive Chamber ----
@@ -981,6 +977,13 @@
     buildElevatorTransition(); // Corridor from elevator to orientation room
     buildOrientationRoom(); // Build main orientation room
     for(const d of deptList) buildHallway(d);
+    
+    // Build shared orientation room copy at the end of all three hallways
+    // This creates the "infinite loop" illusion - all hallways lead to the same copy
+    const hallEndZ = ORIENT.z + ORIENT.d/2 + HALL.len; // Where hallways end (z=108)
+    const orientCopyZ = hallEndZ + ORIENT.d/2; // Center of copy (z=115)
+    buildOrientationRoom(orientCopyZ, true, true, false); // isMainRoom=false
+    
     buildElevator();
     // Don't build chamber yet - it should only appear after all 3 departments visited
     updateCP();
