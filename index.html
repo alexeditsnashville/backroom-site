@@ -119,9 +119,9 @@
     const BOUNDS_X_MIN = -22;
     const BOUNDS_X_MAX = 22;
     const BOUNDS_Z_MIN = -28;
-    const BOUNDS_Z_MAX = 150; // Extended to allow chamber exploration
+    const BOUNDS_Z_MAX = 160; // Extended to allow chamber exploration (122 + 26 + buffer)
 
-    const ELEV = { x:0, z:-19.5, w:2.05, d:1.70 };
+    const ELEV = { x:0, z:-18.65, w:2.05, d:1.70 }; // Center at -18.65 so it spans z=-19.5 to -17.8
     const ORIENT = { x:0, z:5, w:30, d:14 }; // Orientation Room (replaces LOBBY)
     const HALL = { len:96, w:6.2, doors:10 };
     const HALL_X = { COMPLIANCE:-10, SURVEILLANCE:0, PURSUANCE:10 };
@@ -690,6 +690,82 @@
       addHeaderSign('SURVEILLANCE', HALL_X.SURVEILLANCE, northZ - 0.24);
       addHeaderSign('PURSUANCE', HALL_X.PURSUANCE, northZ - 0.24);
     }
+
+    // Build individual orientation room for a specific hallway
+    function buildHallwayOrientationRoom(hallX, hallKey, centerZ){
+      // Each hallway gets its own 30x14 orientation room at the end
+      const roomW = 30;
+      const roomD = 14;
+      const halfDepth = roomD/2;
+      const startZ = centerZ - halfDepth;
+      const endZ = centerZ + halfDepth;
+      const cy = CEIL_H/2;
+      
+      // Floor and ceiling
+      floorPlane(hallX, centerZ, roomW, roomD, mat.offWhite);
+      ceilPlane(hallX, centerZ, roomW, roomD, CEIL_H, mat.ceiling);
+      
+      // Side walls
+      wallBox(hallX - roomW/2, cy, centerZ, WALL_T, CEIL_H, roomD, mat.offWhite);
+      wallBox(hallX + roomW/2, cy, centerZ, WALL_T, CEIL_H, roomD, mat.offWhite);
+      
+      // South wall - has single opening for the hallway entrance
+      const southZ = startZ;
+      const hallOpeningW = HALL.w + 0.2; // slightly wider than hallway
+      const leftLen = (hallX - hallOpeningW/2) - (hallX - roomW/2);
+      if (leftLen > 0.25) wallBox((hallX - roomW/2) + leftLen/2, cy, southZ, leftLen, CEIL_H, WALL_T, mat.offWhite);
+      const rightLen = (hallX + roomW/2) - (hallX + hallOpeningW/2);
+      if (rightLen > 0.25) wallBox((hallX + hallOpeningW/2) + rightLen/2, cy, southZ, rightLen, CEIL_H, WALL_T, mat.offWhite);
+      
+      // North wall with 3 openings for C, S, P hallways (same as main orientation room)
+      const northZ = endZ;
+      const openingW = CORRIDOR_OPENING_W;
+      
+      // Simplified: just build 3 openings at relative positions
+      const relPositions = [-10, 0, 10]; // C, S, P relative to hallway center
+      let cur = hallX - roomW/2;
+      for (const relX of relPositions) {
+        const openingCenterX = hallX + relX;
+        const openingStart = openingCenterX - openingW/2;
+        const openingEnd = openingCenterX + openingW/2;
+        
+        // Wall segment before this opening
+        const seg = openingStart - cur;
+        if (seg > 0.25) wallBox(cur + seg/2, cy, northZ, seg, CEIL_H, WALL_T, mat.offWhite);
+        cur = openingEnd;
+      }
+      // Final segment
+      const tail = (hallX + roomW/2) - cur;
+      if (tail > 0.25) wallBox(cur + tail/2, cy, northZ, tail, CEIL_H, WALL_T, mat.offWhite);
+      
+      // Lighting (4 lights)
+      for (let i = 0; i < 4; i++) {
+        const z = startZ + 2 + i * 3;
+        const panel = new THREE.Mesh(
+          new THREE.BoxGeometry(3.2, 0.05, 0.95),
+          new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.25,
+            metalness: 0.0,
+            emissive: 0xffffff,
+            emissiveIntensity: 0.22
+          })
+        );
+        panel.position.set(hallX, CEIL_H - 0.16, z);
+        world.add(panel);
+        
+        const l = new THREE.PointLight(0xffffff, 0.28, 22, 1.35);
+        l.position.set(hallX, CEIL_H - 0.44, z);
+        scene.add(l);
+      }
+      
+      // Department signage on north wall
+      addHeaderSign('COMPLIANCE', hallX - 10, northZ - 0.24);
+      addHeaderSign('SURVEILLANCE', hallX, northZ - 0.24);
+      addHeaderSign('PURSUANCE', hallX + 10, northZ - 0.24);
+      
+      return { centerX: hallX, centerZ, startZ, endZ };
+    }
     
     function buildElevatorTransition(){
       // Small corridor connecting elevator to orientation room
@@ -782,7 +858,20 @@
         new THREE.Vector3(hallX - HALL.w/2 + 0.4, 0, endZ - 2.2),
         new THREE.Vector3(hallX + HALL.w/2 - 0.4, 2.0, endZ - 0.2)
       );
-      hallwayInfo.push({ deptKey: dept.key, hallX, startZ, endZ, trigger });
+      
+      // Build orientation room at end of this hallway
+      // Room should be centered at z = endZ + 14/2 = endZ + 7
+      const roomCenterZ = endZ + 7;
+      const roomInfo = buildHallwayOrientationRoom(hallX, dept.key, roomCenterZ);
+      
+      hallwayInfo.push({ 
+        deptKey: dept.key, 
+        hallX, 
+        startZ, 
+        endZ, 
+        trigger,
+        orientRoom: roomInfo 
+      });
     }
 
     // ---- Massive Chamber ----
@@ -794,10 +883,10 @@
       if (chamberBuilt) return;
       chamberBuilt = true;
 
-      // Chamber starts AFTER the shared orientation room copy at the hallway ends
-      // Formula: main orientation north wall + hallway length + orientation copy depth
-      // = (ORIENT.z + ORIENT.d/2) + HALL.len + ORIENT.d
-      const chamberStartZ = ORIENT.z + ORIENT.d/2 + HALL.len + ORIENT.d;
+      // Chamber starts AFTER the hallway orientation rooms
+      // Main orientation: z=-2 to 12, Hallways: z=12 to 108, Hallway rooms: z=108 to 122
+      // Chamber starts at z=122
+      const chamberStartZ = 122;
       const chamberW = 40;
       const chamberD = CHAMBER_D;
       const chamberH = 3.2; // taller than hallways for dramatic effect
@@ -978,13 +1067,7 @@
     // ---- Build world ----
     buildElevatorTransition(); // Corridor from elevator to orientation room
     buildOrientationRoom(); // Build main orientation room
-    for(const d of deptList) buildHallway(d);
-    
-    // Build shared orientation room copy at the end of all three hallways
-    // This creates the "infinite loop" illusion - all hallways lead to the same copy
-    const hallEndZ = ORIENT.z + ORIENT.d/2 + HALL.len; // Where hallways end
-    const orientCopyZ = hallEndZ + ORIENT.d/2; // Center of copy
-    buildOrientationRoom(orientCopyZ, true, true, false); // isMainRoom=false
+    for(const d of deptList) buildHallway(d); // Each hallway builds its own orientation room at the end
     
     buildElevator();
     // Don't build chamber yet - it should only appear after all 3 departments visited
@@ -1136,7 +1219,7 @@
     listenBtn.addEventListener('click', ()=>window.open('https://reallybadband.komi.io','_blank','noopener'));
 
     // ---- Spawn (standing) ----
-    camera.position.set(ELEV.x, STAND_Y, ELEV.z-0.20);
+    camera.position.set(ELEV.x, STAND_Y, ELEV.z);
 
     // ---- Movement ----
     const vel=new THREE.Vector3();
@@ -1182,12 +1265,13 @@ function applyStance(){
     function handleLoops(){
       let triggerActive = false;
       
+      // First check: entering hallway orientation rooms (marks department as visited)
       for(const h of hallwayInfo){
         if(h.trigger.containsPoint(camera.position)){
           triggerActive = true;
           
           // Prevent multiple triggers on same hallway
-          if (lastTriggeredHall === h.deptKey) return;
+          if (lastTriggeredHall === h.deptKey) continue;
           lastTriggeredHall = h.deptKey;
           
           // Mark department as visited if not already
@@ -1197,25 +1281,37 @@ function applyStance(){
             cp.hallKey = h.deptKey;
             updateCP();
           }
-          
-          // Check if all 3 departments are complete
-          if(completed.size === 3 && !completionTriggered){
-            completionTriggered = true;
+        }
+      }
+      
+      // Second check: reaching END of orientation rooms (triggers chamber if all complete)
+      if(completed.size === 3 && !completionTriggered){
+        // Check if player is at the END of any hallway orientation room
+        for(const h of hallwayInfo){
+          if(h.orientRoom){
+            const roomEndZ = h.orientRoom.endZ;
+            const roomX = h.orientRoom.centerX;
+            // Trigger zone at north end of orientation room
+            const endTrigger = new THREE.Box3(
+              new THREE.Vector3(roomX - 12, 0, roomEndZ - 3),
+              new THREE.Vector3(roomX + 12, 2.0, roomEndZ)
+            );
             
-            // Build the massive chamber (it appears beyond the shared orientation copy)
-            buildMassiveChamber();
-            
-            // Highlight center accent wall to draw attention
-            if (centerAccentWall && centerAccentWall.material) {
-              centerAccentWall.material.emissive = new THREE.Color(0x5e5a54);
-              centerAccentWall.material.emissiveIntensity = 0.65;
+            if(endTrigger.containsPoint(camera.position)){
+              completionTriggered = true;
+              
+              // Build the massive chamber
+              buildMassiveChamber();
+              
+              // Highlight center accent wall to draw attention
+              if (centerAccentWall && centerAccentWall.material) {
+                centerAccentWall.material.emissive = new THREE.Color(0x5e5a54);
+                centerAccentWall.material.emissiveIntensity = 0.65;
+              }
+              
+              break;
             }
           }
-          
-          // No teleportation - player walks naturally through the shared orientation copy
-          // The copy creates the infinite loop illusion by showing C/S/P hallways again
-          
-          return;
         }
       }
       
