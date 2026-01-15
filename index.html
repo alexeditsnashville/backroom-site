@@ -1088,7 +1088,7 @@ function applyStance(){
     function handleLoops(){
       for(const h of hallwayInfo){
         if(h.trigger.containsPoint(camera.position)){
-          if(!completed.has(h.deptKey)){
+          if (!completed.has(h.deptKey)){
             completed.add(h.deptKey);
             saveCompletion();
             cp.hallKey=h.deptKey;
