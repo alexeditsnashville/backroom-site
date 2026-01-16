@@ -3,17 +3,17 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import * as THREE from "three";
 
-// Player spawn/reset position
+// Player spawn/reset position - facing orientation room from post-elevator hallway
 const HUB_POSITION_X = 0;
 const HUB_POSITION_Y = 1.6;
-const HUB_POSITION_Z = 8;
+const HUB_POSITION_Z = 2;
 
-// Loop trigger boundaries
-const PURSUANCE_TRIGGER_X = -15;
-const COMPLIANCE_TRIGGER_X = 15;
-const SURVEILLANCE_TRIGGER_Z = 25;
-const HALLWAY_MIN_Z = 5;
-const HALLWAY_MAX_Z = 25;
+// Loop trigger boundaries - adjusted for new layout
+const PURSUANCE_TRIGGER_X = -20;
+const COMPLIANCE_TRIGGER_X = 20;
+const SURVEILLANCE_TRIGGER_Z = 30;
+const HALLWAY_MIN_Z = 12;
+const HALLWAY_MAX_Z = 30;
 const CENTER_MIN_X = -5;
 const CENTER_MAX_X = 5;
 
@@ -51,27 +51,27 @@ function Environment() {
       {/* Floor */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <planeGeometry args={[100, 100]} />
-        <meshStandardMaterial color="#1a1a1a" />
+        <meshStandardMaterial color="#404040" />
       </mesh>
 
       {/* Elevator Room (Starting position) */}
-      <group position={[0, 0, -5]}>
+      <group position={[0, 0, -10]}>
         {/* Elevator back wall */}
         <mesh position={[0, 2, -3]} castShadow>
           <boxGeometry args={[4, 4, 0.2]} />
-          <meshStandardMaterial color="#2a2a2a" />
+          <meshStandardMaterial color="#505050" />
         </mesh>
         
         {/* Elevator left wall */}
         <mesh position={[-2, 2, -1]} castShadow>
           <boxGeometry args={[0.2, 4, 4]} />
-          <meshStandardMaterial color="#2a2a2a" />
+          <meshStandardMaterial color="#505050" />
         </mesh>
         
         {/* Elevator right wall */}
         <mesh position={[2, 2, -1]} castShadow>
           <boxGeometry args={[0.2, 4, 4]} />
-          <meshStandardMaterial color="#2a2a2a" />
+          <meshStandardMaterial color="#505050" />
         </mesh>
 
         {/* Elevator door frame (simple representation) */}
@@ -81,64 +81,97 @@ function Environment() {
         </mesh>
       </group>
 
-      {/* Orientation Room (straight ahead from elevator) */}
-      <group position={[0, 0, 10]}>
-        {/* Front wall */}
-        <mesh position={[0, 2, 5]} castShadow>
-          <boxGeometry args={[8, 4, 0.2]} />
-          <meshStandardMaterial color="#2a2a2a" />
+      {/* Post-Elevator Hallway (left/right with orientation door/windows) */}
+      <group position={[0, 0, 0]}>
+        {/* Hallway back wall (behind elevator exit) */}
+        <mesh position={[0, 2, -8]} castShadow>
+          <boxGeometry args={[12, 4, 0.2]} />
+          <meshStandardMaterial color="#505050" />
         </mesh>
         
-        {/* Left wall */}
-        <mesh position={[-4, 2, 0]} castShadow>
-          <boxGeometry args={[0.2, 4, 10]} />
-          <meshStandardMaterial color="#2a2a2a" />
+        {/* Hallway left wall */}
+        <mesh position={[-6, 2, -2]} castShadow>
+          <boxGeometry args={[0.2, 4, 12]} />
+          <meshStandardMaterial color="#505050" />
         </mesh>
         
-        {/* Right wall */}
-        <mesh position={[4, 2, 0]} castShadow>
-          <boxGeometry args={[0.2, 4, 10]} />
-          <meshStandardMaterial color="#2a2a2a" />
-        </mesh>
-        
-        {/* Back wall */}
-        <mesh position={[0, 2, -5]} castShadow>
-          <boxGeometry args={[8, 4, 0.2]} />
-          <meshStandardMaterial color="#2a2a2a" />
+        {/* Hallway right wall */}
+        <mesh position={[6, 2, -2]} castShadow>
+          <boxGeometry args={[0.2, 4, 12]} />
+          <meshStandardMaterial color="#505050" />
         </mesh>
 
-        {/* Orientation room label */}
+        {/* Orientation Room Door (center of front wall) */}
+        <mesh position={[0, 2, 4]} castShadow>
+          <boxGeometry args={[2.5, 3.5, 0.1]} />
+          <meshStandardMaterial color="#4a4a4a" />
+        </mesh>
+        
+        {/* Door label */}
         <Text
-          position={[0, 2.5, 4.9]}
-          fontSize={0.4}
+          position={[0, 2.5, 4.1]}
+          fontSize={0.3}
           color="white"
           anchorX="center"
           anchorY="middle"
         >
           ORIENTATION
         </Text>
-      </group>
 
-      {/* Left pathway around orientation room */}
-      <group position={[-7, 0, 10]}>
-        {/* Left corridor wall */}
-        <mesh position={[-2, 2, 0]} castShadow>
-          <boxGeometry args={[0.2, 4, 10]} />
-          <meshStandardMaterial color="#2a2a2a" />
+        {/* Left window panel */}
+        <mesh position={[-3.5, 2, 4]} castShadow>
+          <boxGeometry args={[2, 1.5, 0.1]} />
+          <meshStandardMaterial color="#1a1a1a" transparent opacity={0.5} />
+        </mesh>
+        
+        {/* Right window panel */}
+        <mesh position={[3.5, 2, 4]} castShadow>
+          <boxGeometry args={[2, 1.5, 0.1]} />
+          <meshStandardMaterial color="#1a1a1a" transparent opacity={0.5} />
+        </mesh>
+        
+        {/* Wall sections around door and windows */}
+        <mesh position={[-5.25, 2, 4]} castShadow>
+          <boxGeometry args={[1.5, 4, 0.2]} />
+          <meshStandardMaterial color="#505050" />
+        </mesh>
+        
+        <mesh position={[5.25, 2, 4]} castShadow>
+          <boxGeometry args={[1.5, 4, 0.2]} />
+          <meshStandardMaterial color="#505050" />
         </mesh>
       </group>
 
-      {/* Right pathway around orientation room */}
-      <group position={[7, 0, 10]}>
-        {/* Right corridor wall */}
-        <mesh position={[2, 2, 0]} castShadow>
-          <boxGeometry args={[0.2, 4, 10]} />
-          <meshStandardMaterial color="#2a2a2a" />
+      {/* Department Hub Room (after hallway, branches to three departments) */}
+      <group position={[0, 0, 8]}>
+        {/* Hub floor is already covered by main floor */}
+        
+        {/* Left wall with opening to PURSUANCE */}
+        <mesh position={[-10, 2, 0]} castShadow>
+          <boxGeometry args={[0.2, 4, 8]} />
+          <meshStandardMaterial color="#505050" />
+        </mesh>
+        
+        {/* Right wall with opening to COMPLIANCE */}
+        <mesh position={[10, 2, 0]} castShadow>
+          <boxGeometry args={[0.2, 4, 8]} />
+          <meshStandardMaterial color="#505050" />
+        </mesh>
+        
+        {/* Back corners to connect to hallways */}
+        <mesh position={[-8, 2, -4]} castShadow>
+          <boxGeometry args={[4, 4, 0.2]} />
+          <meshStandardMaterial color="#505050" />
+        </mesh>
+        
+        <mesh position={[8, 2, -4]} castShadow>
+          <boxGeometry args={[4, 4, 0.2]} />
+          <meshStandardMaterial color="#505050" />
         </mesh>
       </group>
 
-      {/* PURSUANCE Hallway (left side) */}
-      <group position={[-12, 0, 10]}>
+      {/* PURSUANCE Hallway (left side from hub) */}
+      <group position={[-15, 0, 12]}>
         {/* Hallway label */}
         <Text
           position={[0, 2.5, 5]}
@@ -153,27 +186,33 @@ function Environment() {
         {/* Left wall */}
         <mesh position={[-2, 2, 10]} castShadow>
           <boxGeometry args={[0.2, 4, 20]} />
-          <meshStandardMaterial color="#2a2a2a" />
+          <meshStandardMaterial color="#505050" />
         </mesh>
         
         {/* Right wall */}
         <mesh position={[2, 2, 10]} castShadow>
           <boxGeometry args={[0.2, 4, 20]} />
-          <meshStandardMaterial color="#2a2a2a" />
+          <meshStandardMaterial color="#505050" />
         </mesh>
         
         {/* End wall */}
         <mesh position={[0, 2, 20]} castShadow>
           <boxGeometry args={[4, 4, 0.2]} />
-          <meshStandardMaterial color="#2a2a2a" />
+          <meshStandardMaterial color="#505050" />
+        </mesh>
+        
+        {/* Back wall (entrance from hub) */}
+        <mesh position={[0, 2, 0]} castShadow>
+          <boxGeometry args={[4, 4, 0.2]} />
+          <meshStandardMaterial color="#505050" />
         </mesh>
       </group>
 
-      {/* SURVEILLANCE Hallway (center) */}
-      <group position={[0, 0, 17]}>
+      {/* SURVEILLANCE Hallway (center from hub) */}
+      <group position={[0, 0, 16]}>
         {/* Hallway label */}
         <Text
-          position={[0, 2.5, 0]}
+          position={[0, 2.5, 2]}
           fontSize={0.5}
           color="#f5b68b"
           anchorX="center"
@@ -183,26 +222,37 @@ function Environment() {
         </Text>
         
         {/* Left wall */}
-        <mesh position={[-2, 2, 5]} castShadow>
-          <boxGeometry args={[0.2, 4, 10]} />
-          <meshStandardMaterial color="#2a2a2a" />
+        <mesh position={[-2.5, 2, 8]} castShadow>
+          <boxGeometry args={[0.2, 4, 16]} />
+          <meshStandardMaterial color="#505050" />
         </mesh>
         
         {/* Right wall */}
-        <mesh position={[2, 2, 5]} castShadow>
-          <boxGeometry args={[0.2, 4, 10]} />
-          <meshStandardMaterial color="#2a2a2a" />
+        <mesh position={[2.5, 2, 8]} castShadow>
+          <boxGeometry args={[0.2, 4, 16]} />
+          <meshStandardMaterial color="#505050" />
         </mesh>
         
         {/* End wall */}
-        <mesh position={[0, 2, 10]} castShadow>
-          <boxGeometry args={[4, 4, 0.2]} />
-          <meshStandardMaterial color="#2a2a2a" />
+        <mesh position={[0, 2, 16]} castShadow>
+          <boxGeometry args={[5, 4, 0.2]} />
+          <meshStandardMaterial color="#505050" />
+        </mesh>
+        
+        {/* Back wall sections (entrance from hub) */}
+        <mesh position={[-3.75, 2, 0]} castShadow>
+          <boxGeometry args={[2.5, 4, 0.2]} />
+          <meshStandardMaterial color="#505050" />
+        </mesh>
+        
+        <mesh position={[3.75, 2, 0]} castShadow>
+          <boxGeometry args={[2.5, 4, 0.2]} />
+          <meshStandardMaterial color="#505050" />
         </mesh>
       </group>
 
-      {/* COMPLIANCE Hallway (right side) */}
-      <group position={[12, 0, 10]}>
+      {/* COMPLIANCE Hallway (right side from hub) */}
+      <group position={[15, 0, 12]}>
         {/* Hallway label */}
         <Text
           position={[0, 2.5, 5]}
@@ -217,40 +267,27 @@ function Environment() {
         {/* Left wall */}
         <mesh position={[-2, 2, 10]} castShadow>
           <boxGeometry args={[0.2, 4, 20]} />
-          <meshStandardMaterial color="#2a2a2a" />
+          <meshStandardMaterial color="#505050" />
         </mesh>
         
         {/* Right wall */}
         <mesh position={[2, 2, 10]} castShadow>
           <boxGeometry args={[0.2, 4, 20]} />
-          <meshStandardMaterial color="#2a2a2a" />
+          <meshStandardMaterial color="#505050" />
         </mesh>
         
         {/* End wall */}
         <mesh position={[0, 2, 20]} castShadow>
           <boxGeometry args={[4, 4, 0.2]} />
-          <meshStandardMaterial color="#2a2a2a" />
+          <meshStandardMaterial color="#505050" />
+        </mesh>
+        
+        {/* Back wall (entrance from hub) */}
+        <mesh position={[0, 2, 0]} castShadow>
+          <boxGeometry args={[4, 4, 0.2]} />
+          <meshStandardMaterial color="#505050" />
         </mesh>
       </group>
-
-      {/* Hub area walls (connecting pathways) */}
-      {/* Back wall behind elevator */}
-      <mesh position={[0, 2, -8]} castShadow>
-        <boxGeometry args={[20, 4, 0.2]} />
-        <meshStandardMaterial color="#2a2a2a" />
-      </mesh>
-      
-      {/* Left hub wall */}
-      <mesh position={[-10, 2, 2]} castShadow>
-        <boxGeometry args={[0.2, 4, 12]} />
-        <meshStandardMaterial color="#2a2a2a" />
-      </mesh>
-      
-      {/* Right hub wall */}
-      <mesh position={[10, 2, 2]} castShadow>
-        <boxGeometry args={[0.2, 4, 12]} />
-        <meshStandardMaterial color="#2a2a2a" />
-      </mesh>
     </>
   );
 }
