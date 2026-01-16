@@ -1,127 +1,65 @@
-import { useMemo, useState } from "react";
-import Card from "./components/Card";
-import FilmStrip from "./components/FilmStrip";
-import Footer from "./components/Footer";
-import Hero from "./components/Hero";
-import HorizontalScroller from "./components/HorizontalScroller";
-import MovieCard from "./components/MovieCard";
-import Navbar from "./components/Navbar";
-import QuoteSection from "./components/QuoteSection";
-import SectionHeading from "./components/SectionHeading";
-import SerialKillers from "./components/SerialKillers";
-import Testimonial from "./components/Testimonial";
-import { categories, featuredMovies, filmStrip, quote, serialKillers, testimonials } from "./data";
+import "./App.css";
 
-const App = () => {
-  const [activeCategory, setActiveCategory] = useState(categories[0]?.slug ?? "");
-
-  const filteredMovies = useMemo(() => {
-    if (!activeCategory) {
-      return featuredMovies;
-    }
-
-    return featuredMovies.filter((movie) => movie.category === activeCategory);
-  }, [activeCategory]);
-
+function App() {
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
-      <Navbar />
-      <main>
-        <Hero />
-        <section className="px-6 pb-12">
-          <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
-            <SectionHeading
-              eyebrow="Case files"
-              title="The haunting archive"
-              description="Explore a rotating collection of unsettling classics, curated for curious minds and dark rooms."
-            />
-            <div className="flex flex-wrap gap-3">
-              {categories.map((category) => (
-                <button
-                  key={category.slug}
-                  type="button"
-                  onClick={() => setActiveCategory(category.slug)}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                    activeCategory === category.slug
-                      ? "border-red-500 bg-red-500/20 text-white"
-                      : "border-white/10 text-white/70 hover:border-white/40 hover:text-white"
-                  }`}
-                >
-                  {category.label}
-                </button>
-              ))}
-            </div>
-            <HorizontalScroller>
-              {filteredMovies.map((movie) => (
-                <MovieCard key={movie.title} {...movie} />
-              ))}
-            </HorizontalScroller>
-          </div>
-        </section>
-        <section className="px-6 pb-12">
-          <div className="mx-auto w-full max-w-6xl">
-            <SectionHeading
-              eyebrow="Reflections"
-              title="Field notes from the backroom"
-              description="Personal accounts from those who keep the vaults open after midnight."
-            />
-            <div className="mt-8 grid gap-6 lg:grid-cols-3">
-              {testimonials.map((entry) => (
-                <Testimonial key={entry.name} {...entry} />
-              ))}
-            </div>
-          </div>
-        </section>
-        <section className="px-6 pb-12">
-          <div className="mx-auto w-full max-w-6xl">
-            <SectionHeading
-              eyebrow="Deep dives"
-              title="Unsolved mythologies"
-              description="Investigate the stories that refuse to stay buried."
-            />
-            <div className="mt-8 grid gap-6 lg:grid-cols-3">
-              {serialKillers.map((killer) => (
-                <SerialKillers key={killer.name} {...killer} />
-              ))}
-            </div>
-          </div>
-        </section>
-        <section className="px-6 pb-12">
-          <div className="mx-auto w-full max-w-6xl">
-            <SectionHeading
-              eyebrow="The archive"
-              title="Sealed evidence"
-              description="Artifacts recovered from the lower levels of the Backroom vault."
-            />
-            <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-              <div className="space-y-6">
-                {filmStrip.map((entry) => (
-                  <FilmStrip key={entry.title} {...entry} />
-                ))}
-              </div>
-              <div className="grid gap-6">
-                {featuredMovies.slice(0, 2).map((movie) => (
-                  <MovieCard key={movie.title} {...movie} />
-                ))}
-                <Card title="Curator's log" meta="Archive 09">
-                  <p className="text-sm text-white/70">
-                    We keep the lights low, the reels turning, and the stories catalogued. The Backroom is
-                    less a place and more a pulse — a warning that the past is always listening.
-                  </p>
-                </Card>
-              </div>
-            </div>
-          </div>
-        </section>
-        <section className="px-6 pb-16">
-          <div className="mx-auto w-full max-w-6xl">
-            <QuoteSection quote={quote} />
-          </div>
-        </section>
-      </main>
-      <Footer />
-    </div>
+    <main className="backroom">
+      <section className="hero">
+        <span className="hero__eyebrow">Private, no-pressure seating</span>
+        <h1>The Backroom</h1>
+        <p>
+          A hidden-away space for focused work sessions, soft landing meetings, and
+          quiet resets between the city’s rhythms.
+        </p>
+        <div className="hero__actions">
+          <button type="button" className="btn btn--primary">
+            Reserve a table
+          </button>
+          <button type="button" className="btn btn--ghost">
+            Download the menu
+          </button>
+        </div>
+      </section>
+
+      <section className="features">
+        <article>
+          <h2>Low light, high focus</h2>
+          <p>
+            Warm lighting, leather banquettes, and soft playlists keep the pace
+            calm while you work.
+          </p>
+        </article>
+        <article>
+          <h2>All-day service</h2>
+          <p>
+            Espresso, zero-proof cocktails, and small plates stay within arm’s
+            reach every hour.
+          </p>
+        </article>
+        <article>
+          <h2>Designed for connection</h2>
+          <p>
+            Semi-private booths make it easy to meet, brainstorm, or unwind
+            without feeling on display.
+          </p>
+        </article>
+      </section>
+
+      <section className="details">
+        <div>
+          <h2>Hours</h2>
+          <p>Daily, 10a–11p</p>
+        </div>
+        <div>
+          <h2>Location</h2>
+          <p>1208 4th Ave South, Nashville</p>
+        </div>
+        <div>
+          <h2>Contact</h2>
+          <p>hello@backroomnashville.com</p>
+        </div>
+      </section>
+    </main>
   );
-};
+}
 
 export default App;
