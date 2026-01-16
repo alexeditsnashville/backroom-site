@@ -21,16 +21,20 @@ function Environment() {
       const { condition } = trigger;
       let shouldTrigger = true;
 
-      // Check x conditions
+      // Check x conditions - trigger activates when position is outside the allowed range
       if (condition.x) {
-        if (condition.x.min !== undefined && pos.x < condition.x.min) shouldTrigger = false;
+        // If max is set, don't trigger if position is greater than max
         if (condition.x.max !== undefined && pos.x > condition.x.max) shouldTrigger = false;
+        // If min is set, don't trigger if position is less than min
+        if (condition.x.min !== undefined && pos.x < condition.x.min) shouldTrigger = false;
       }
 
-      // Check z conditions
+      // Check z conditions - trigger activates when position is outside the allowed range
       if (condition.z) {
-        if (condition.z.min !== undefined && pos.z < condition.z.min) shouldTrigger = false;
+        // If max is set, don't trigger if position is greater than max
         if (condition.z.max !== undefined && pos.z > condition.z.max) shouldTrigger = false;
+        // If min is set, don't trigger if position is less than min
+        if (condition.z.min !== undefined && pos.z < condition.z.min) shouldTrigger = false;
       }
 
       // Trigger teleport if all conditions met
