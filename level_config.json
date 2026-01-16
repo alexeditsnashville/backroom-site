@@ -1,0 +1,169 @@
+{
+  "meta": {
+    "name": "The Backroom - Department Hub",
+    "version": "1.0",
+    "units": "meters",
+    "coordinateSystem": {
+      "x": "left-right (- is left, + is right)",
+      "y": "up-down (- is down, + is up)",
+      "z": "forward-back (- is back, + is forward)"
+    }
+  },
+  "spawn": {
+    "position": [0, 1.6, 2],
+    "rotation": [0, 0, 0],
+    "description": "Hub position - player spawn/reset point"
+  },
+  "hub": {
+    "center": [0, 0, 8],
+    "size": {
+      "width": 20,
+      "depth": 8
+    },
+    "wallHeight": 4
+  },
+  "departments": [
+    {
+      "id": "pursuance",
+      "name": "PURSUANCE",
+      "labelColor": "#f5b68b",
+      "entrance": {
+        "position": [-10, 0, 8],
+        "direction": "left"
+      },
+      "hallway": {
+        "center": [-15, 0, 12],
+        "width": 4,
+        "length": 20,
+        "wallHeight": 4,
+        "labelOffset": [0, 2.5, 5]
+      }
+    },
+    {
+      "id": "surveillance",
+      "name": "SURVEILLANCE",
+      "labelColor": "#f5b68b",
+      "entrance": {
+        "position": [0, 0, 12],
+        "direction": "forward",
+        "wallSections": [
+          {
+            "position": [-3.75, 2, 0],
+            "size": [2.5, 4, 0.2]
+          },
+          {
+            "position": [3.75, 2, 0],
+            "size": [2.5, 4, 0.2]
+          }
+        ]
+      },
+      "hallway": {
+        "center": [0, 0, 16],
+        "width": 5,
+        "length": 16,
+        "wallHeight": 4,
+        "labelOffset": [0, 2.5, 2]
+      }
+    },
+    {
+      "id": "compliance",
+      "name": "COMPLIANCE",
+      "labelColor": "#f5b68b",
+      "entrance": {
+        "position": [10, 0, 8],
+        "direction": "right"
+      },
+      "hallway": {
+        "center": [15, 0, 12],
+        "width": 4,
+        "length": 20,
+        "wallHeight": 4,
+        "labelOffset": [0, 2.5, 5]
+      }
+    }
+  ],
+  "loopTriggers": [
+    {
+      "id": "pursuance_end",
+      "department": "pursuance",
+      "type": "teleport",
+      "condition": {
+        "x": { "max": -20 },
+        "z": { "min": 12, "max": 30 }
+      },
+      "action": {
+        "teleportTo": "spawn"
+      }
+    },
+    {
+      "id": "surveillance_end",
+      "department": "surveillance",
+      "type": "teleport",
+      "condition": {
+        "z": { "min": 30 },
+        "x": { "min": -5, "max": 5 }
+      },
+      "action": {
+        "teleportTo": "spawn"
+      }
+    },
+    {
+      "id": "compliance_end",
+      "department": "compliance",
+      "type": "teleport",
+      "condition": {
+        "x": { "min": 20 },
+        "z": { "min": 12, "max": 30 }
+      },
+      "action": {
+        "teleportTo": "spawn"
+      }
+    }
+  ],
+  "elevator": {
+    "position": [0, 0, -10],
+    "room": {
+      "width": 4,
+      "height": 4,
+      "depth": 4
+    }
+  },
+  "postElevatorHallway": {
+    "position": [0, 0, 0],
+    "size": {
+      "width": 12,
+      "depth": 12,
+      "height": 4
+    },
+    "orientationDoor": {
+      "position": [0, 2, 4],
+      "size": [2.5, 3.5, 0.1],
+      "label": "ORIENTATION",
+      "labelPosition": [0, 2.5, 4.1],
+      "labelSize": 0.3
+    },
+    "windows": [
+      {
+        "position": [-3.5, 2, 4],
+        "size": [2, 1.5, 0.1]
+      },
+      {
+        "position": [3.5, 2, 4],
+        "size": [2, 1.5, 0.1]
+      }
+    ]
+  },
+  "floor": {
+    "position": [0, 0, 0],
+    "size": [100, 100],
+    "color": "#404040"
+  },
+  "materials": {
+    "wall": "#505050",
+    "door": "#4a4a4a",
+    "doorTransparent": "#3a3a3a",
+    "window": "#1a1a1a",
+    "floor": "#404040",
+    "labelDefault": "white"
+  }
+}
