@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLOOR 7 1/2 - MERKIN FLEMMER BUILDING</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            background: #000;
+            color: #e0e0e0;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.92);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .welcome-panel {
+            background: #1a1a1a;
+            border: 3px solid #3a3a3a;
+            padding: 40px 60px;
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .welcome-panel h1 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+            color: #e0e0e0;
+        }
+
+        .btn {
+            background: #2a2a2a;
+            border: 2px solid #4a4a4a;
+            color: #e0e0e0;
+            padding: 15px 40px;
+            margin: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background: #3a3a3a;
+            border-color: #5a5a5a;
+        }
+
+        #logo {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 120px;
+            z-index: 999;
+            opacity: 0.9;
+        }
+
+        #formOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        #formOverlay.active {
+            display: flex;
+        }
+
+        .form-panel {
+            background: #1a1a1a;
+            border: 3px solid #3a3a3a;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .form-panel h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .form-panel input {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            background: #2a2a2a;
+            border: 2px solid #4a4a4a;
+            color: #e0e0e0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+        }
+
+        .form-panel input:focus {
+            outline: none;
+            border-color: #5a5a5a;
+        }
+
+        .form-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .success-message {
+            text-align: center;
+            padding: 20px;
+            color: #4a9d4a;
+            display: none;
+        }
+
+        .success-message.active {
+            display: block;
+        }
+
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(26, 26, 26, 0.8);
+            border: 2px solid #3a3a3a;
+            padding: 15px;
+            font-size: 12px;
+            z-index: 998;
+            max-width: 300px;
+        }
+
+        #controls.hidden {
+            display: none;
+        }
+
+        .control-line {
+            margin: 5px 0;
+        }
+
+        #loadingText {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            z-index: 999;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <img id="logo" src="RB_Text.png" alt="Really Bad" onerror="this.style.display='none'">
+    
+    <div id="welcomeOverlay" class="overlay">
+        <div class="welcome-panel">
+            <h1>WELCOME TO FLOOR 7 1/2<br>AT THE MERKIN FLEMMER BUILDING</h1>
+            <button id="enterBtn" class="btn">ENTER</button>
+            <a href="https://reallybadband.komi.io" class="btn" target="_blank">MUSIC</a>
+        </div>
+    </div>
+
+    <div id="formOverlay">
+        <div class="form-panel">
+            <h2>JOIN THE COUNTER PROGRAM</h2>
+            <div id="formContent">
+                <input type="tel" id="phoneInput" placeholder="Enter Phone Number" maxlength="15">
+                <button class="btn" onclick="submitCounterProgram()" style="width: 100%;">SUBMIT</button>
+            </div>
+            <div id="successMessage" class="success-message">
+                <p>WELCOME TO THE COUNTER PROGRAM</p>
+                <div class="form-buttons">
+                    <button class="btn" onclick="restartGame()">RESTART</button>
+                    <button class="btn" onclick="exploreRandom()">EXPLORE</button>
+                    <button class="btn" onclick="learnMore()">LEARN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="controls">
+        <div class="control-line"><strong>CONTROLS:</strong></div>
+        <div class="control-line">WASD - Move</div>
+        <div class="control-line">Mouse - Look</div>
+        <div class="control-line">C - Crouch</div>
+        <div class="control-line">F - Interact</div>
+        <div class="control-line">SHIFT - Sprint</div>
+    </div>
+
+    <div id="loadingText">LOADING...</div>
+
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script>
+        // Game State
+        const gameState = {
+            inElevator: true,
+            elevatorDoorsOpen: false,
+            crouching: false,
+            completedHallways: JSON.parse(localStorage.getItem('completedHallways') || '[]'),
+            currentHallway: null,
+            nearDoor: false,
+            playerSpeed: 8,
+            sprintSpeed: 15,
+            currentSpeed: 8,
+            tunnelCreated: JSON.parse(localStorage.getItem('completedHallways') || '[]').length >= 3
+        };
+
+        // World Layout Constants
+        const WORLD_LAYOUT = {
+            ELEVATOR_Z: 0,
+            ENTRANCE_Z: 10,
+            ORIENTATION_1_Z: 10,
+            HALLWAY_1_START_Z: 3,
+            ORIENTATION_2_Z: -100,
+            HALLWAY_2_START_Z: -107,
+            ORIENTATION_3_Z: -210,
+            HALLWAY_3_START_Z: -217,
+            ORIENTATION_4_Z: -320,
+            TUNNEL_START_Z: -324,
+            CHAMBER_Z: -368
+        };
+
+        // Three.js Setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a0a);
+        scene.fog = new THREE.Fog(0x0a0a0a, 40, 100);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+
+        // Player Controller
+        const keys = {};
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false;
+        let yaw = 0, pitch = 0;
+        const pitchLimit = Math.PI / 2.5;
+
+        camera.position.set(0, 1.6, 2);
+        camera.rotation.order = 'YXZ';
+
+        // Collision Objects
+        const collisionBoxes = [];
+
+        function addCollisionBox(x, y, z, width, height, depth) {
+            collisionBoxes.push({
+                min: new THREE.Vector3(x - width/2, y - height/2, z - depth/2),
+                max: new THREE.Vector3(x + width/2, y + height/2, z + depth/2)
+            });
+        }
+
+        // Create Elevator
+        function createElevator() {
+            const elevator = new THREE.Group();
+            
+            // Floor
+            const floorGeo = new THREE.PlaneGeometry(4, 4);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            elevator.add(floor);
+
+            // Walls (back, left, right)
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2a });
+            
+            const backWall = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), wallMat);
+            backWall.position.z = -2;
+            backWall.position.y = 1.5;
+            elevator.add(backWall);
+
+            const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), wallMat);
+            leftWall.position.x = -2;
+            leftWall.position.y = 1.5;
+            leftWall.rotation.y = Math.PI / 2;
+            elevator.add(leftWall);
+
+            const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), wallMat);
+            rightWall.position.x = 2;
+            rightWall.position.y = 1.5;
+            rightWall.rotation.y = -Math.PI / 2;
+            elevator.add(rightWall);
+
+            // Ceiling
+            const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), wallMat);
+            ceiling.position.y = 3;
+            ceiling.rotation.x = Math.PI / 2;
+            elevator.add(ceiling);
+
+            // Light panel
+            const lightGeo = new THREE.PlaneGeometry(2, 2);
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffdd });
+            const light = new THREE.Mesh(lightGeo, lightMat);
+            light.position.y = 2.99;
+            light.rotation.x = Math.PI / 2;
+            elevator.add(light);
+
+            // Point light
+            const pointLight = new THREE.PointLight(0xffffdd, 1, 10);
+            pointLight.position.set(0, 2.5, 0);
+            elevator.add(pointLight);
+
+            // Floor indicators (flickering between 7 and 8)
+            for (let i = 0; i < 11; i++) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 64;
+                canvas.height = 64;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, 64, 64);
+                ctx.fillStyle = Math.random() > 0.5 ? '#ff0000' : '#00ff00';
+                ctx.font = '32px Courier';
+                ctx.fillText(Math.random() > 0.5 ? '7' : '8', 20, 42);
+                
+                const texture = new THREE.CanvasTexture(canvas);
+                const indicatorMat = new THREE.MeshBasicMaterial({ map: texture });
+                const indicator = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.2), indicatorMat);
+                indicator.position.set(-1.8 + (i % 4) * 0.25, 2.5 - Math.floor(i / 4) * 0.25, -1.95);
+                elevator.add(indicator);
+            }
+
+            // Doors
+            const doorMat = new THREE.MeshStandardMaterial({ color: 0x5a4a3a });
+            const leftDoor = new THREE.Mesh(new THREE.PlaneGeometry(2, 3), doorMat);
+            leftDoor.position.set(-1, 1.5, 2);
+            leftDoor.name = 'leftDoor';
+            elevator.add(leftDoor);
+
+            const rightDoor = new THREE.Mesh(new THREE.PlaneGeometry(2, 3), doorMat);
+            rightDoor.position.set(1, 1.5, 2);
+            rightDoor.name = 'rightDoor';
+            elevator.add(rightDoor);
+
+            scene.add(elevator);
+            return { leftDoor, rightDoor };
+        }
+
+        const elevatorDoors = createElevator();
+
+        // Create partial Floor 8 ceiling/wall
+        function createFloor8() {
+            const floor8Mat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a });
+            const ceiling8 = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), floor8Mat);
+            ceiling8.rotation.x = Math.PI / 2;
+            ceiling8.position.set(0, 1.85, 7);
+            scene.add(ceiling8);
+
+            const wall8 = new THREE.Mesh(new THREE.PlaneGeometry(10, 1.85), floor8Mat);
+            wall8.position.set(0, 0.925, 7);
+            scene.add(wall8);
+
+            addCollisionBox(0, 0.925, 7, 10, 1.85, 0.2);
+        }
+        createFloor8();
+
+        // Create text texture
+        function createTextTexture(text, bgColor = '#1a1a1a', textColor = '#e0e0e0', width = 512, height = 128) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = textColor;
+            ctx.font = 'bold 48px Courier';
+            ctx.textAlign = 'center';
+            ctx.fillText(text, width/2, height/2 + 16);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // Create Orientation Room
+        function createOrientationRoom(zOffset) {
+            const room = new THREE.Group();
+            room.position.z = zOffset;
+
+            // Floor
+            const floorGeo = new THREE.PlaneGeometry(30, 14);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0xd5d5c5 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            room.add(floor);
+
+            // Ceiling
+            const ceilingMat = new THREE.MeshStandardMaterial({ color: 0xc5c5b5 });
+            const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(30, 14), ceilingMat);
+            ceiling.position.y = 1.85;
+            ceiling.rotation.x = Math.PI / 2;
+            room.add(ceiling);
+
+            // Side walls
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0xbabaa5 });
+            const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(14, 1.85), wallMat);
+            leftWall.position.set(-15, 0.925, 0);
+            leftWall.rotation.y = Math.PI / 2;
+            room.add(leftWall);
+            addCollisionBox(-15 + zOffset, 0.925, 0, 0.2, 1.85, 14);
+
+            const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(14, 1.85), wallMat);
+            rightWall.position.set(15, 0.925, 0);
+            rightWall.rotation.y = -Math.PI / 2;
+            room.add(rightWall);
+            addCollisionBox(15 + zOffset, 0.925, 0, 0.2, 1.85, 14);
+
+            // North wall with 3 hallway openings
+            const wallSegments = [
+                { x: -20, width: 10 },
+                { x: -7.5, width: 5 },
+                { x: 0, width: 10 },
+                { x: 7.5, width: 5 },
+                { x: 20, width: 10 }
+            ];
+
+            wallSegments.forEach(seg => {
+                const segment = new THREE.Mesh(new THREE.PlaneGeometry(seg.width, 1.85), wallMat);
+                segment.position.set(seg.x, 0.925, -7);
+                room.add(segment);
+            });
+
+            // Department signs above hallways
+            const departments = [
+                { name: 'PURSUANCE', x: -10, color: '#243245' },
+                { name: 'SURVEILLANCE', x: 0, color: '#5e5a54' },
+                { name: 'COMPLIANCE', x: 10, color: '#2f3b32' }
+            ];
+
+            departments.forEach(dept => {
+                const signTexture = createTextTexture(dept.name, dept.color);
+                const signMat = new THREE.MeshBasicMaterial({ map: signTexture });
+                const sign = new THREE.Mesh(new THREE.PlaneGeometry(4, 0.5), signMat);
+                sign.position.set(dept.x, 1.6, -6.9);
+                room.add(sign);
+            });
+
+            // Ceiling lights
+            for (let i = 0; i < 4; i++) {
+                const lightPos = new THREE.Vector3(-7.5 + i * 5, 1.8, 0);
+                const pointLight = new THREE.PointLight(0xffffcc, 0.8, 15);
+                pointLight.position.copy(lightPos);
+                room.add(pointLight);
+
+                const lightMesh = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.3, 16),
+                    new THREE.MeshBasicMaterial({ color: 0xffffdd })
+                );
+                lightMesh.position.copy(lightPos);
+                lightMesh.rotation.x = -Math.PI / 2;
+                room.add(lightMesh);
+            }
+
+            scene.add(room);
+        }
+
+        // Create Hallway
+        function createHallway(type, xOffset, zStart) {
+            const hallway = new THREE.Group();
+            const hallwayLength = 96;
+            const hallwayWidth = 6.2;
+
+            const colors = {
+                'PURSUANCE': 0x243245,
+                'SURVEILLANCE': 0x5e5a54,
+                'COMPLIANCE': 0x2f3b32
+            };
+
+            // Floor
+            const floorMat = new THREE.MeshStandardMaterial({ color: colors[type] });
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(hallwayWidth, hallwayLength), floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.set(xOffset, 0, zStart - hallwayLength/2);
+            floor.receiveShadow = true;
+            hallway.add(floor);
+
+            // Ceiling
+            const ceilingMat = new THREE.MeshStandardMaterial({ color: 0xc5c5b5 });
+            const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(hallwayWidth, hallwayLength), ceilingMat);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.set(xOffset, 1.85, zStart - hallwayLength/2);
+            hallway.add(ceiling);
+
+            // Side walls
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0xbabaa5 });
+            const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(hallwayLength, 1.85), wallMat);
+            leftWall.position.set(xOffset - hallwayWidth/2, 0.925, zStart - hallwayLength/2);
+            leftWall.rotation.y = Math.PI / 2;
+            hallway.add(leftWall);
+            addCollisionBox(xOffset - hallwayWidth/2, 0.925, zStart - hallwayLength/2, 0.2, 1.85, hallwayLength);
+
+            const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(hallwayLength, 1.85), wallMat);
+            rightWall.position.set(xOffset + hallwayWidth/2, 0.925, zStart - hallwayLength/2);
+            rightWall.rotation.y = -Math.PI / 2;
+            hallway.add(rightWall);
+            addCollisionBox(xOffset + hallwayWidth/2, 0.925, zStart - hallwayLength/2, 0.2, 1.85, hallwayLength);
+
+            // Doors (10 total, staggered)
+            const doorMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });
+            for (let i = 0; i < 10; i++) {
+                const side = i % 2 === 0 ? -1 : 1;
+                const doorZ = zStart - 8 - i * 9;
+                const doorX = xOffset + side * (hallwayWidth/2 - 0.05);
+
+                const doorFrame = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2), doorMat);
+                doorFrame.position.set(doorX, 1, doorZ);
+                doorFrame.rotation.y = side === -1 ? Math.PI / 2 : -Math.PI / 2;
+                hallway.add(doorFrame);
+
+                // Door plaque
+                const plaqueTexture = createTextTexture(`${type[0]}${i+1}`, '#2a2a2a', '#e0e0e0', 256, 64);
+                const plaqueMat = new THREE.MeshBasicMaterial({ map: plaqueTexture });
+                const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.2), plaqueMat);
+                plaque.position.set(doorX, 1.6, doorZ);
+                plaque.rotation.y = side === -1 ? Math.PI / 2 : -Math.PI / 2;
+                hallway.add(plaque);
+            }
+
+            // Ceiling lights
+            for (let i = 0; i < 9; i++) {
+                const lightZ = zStart - 8 - i * 10;
+                const pointLight = new THREE.PointLight(0xffffcc, 0.7, 12);
+                pointLight.position.set(xOffset, 1.8, lightZ);
+                hallway.add(pointLight);
+
+                const lightMesh = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.25, 16),
+                    new THREE.MeshBasicMaterial({ color: 0xffffdd })
+                );
+                lightMesh.position.set(xOffset, 1.84, lightZ);
+                lightMesh.rotation.x = -Math.PI / 2;
+                hallway.add(lightMesh);
+            }
+
+            scene.add(hallway);
+        }
+
+        // Create Dark Tunnel
+        function createDarkTunnel(xOffset, zStart) {
+            const tunnel = new THREE.Group();
+            const tunnelLength = 40;
+
+            const tunnelMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a });
+            
+            // Floor
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(4, tunnelLength), tunnelMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.set(xOffset, 0, zStart - tunnelLength/2);
+            tunnel.add(floor);
+
+            // Ceiling
+            const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(4, tunnelLength), tunnelMat);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.set(xOffset, 1.85, zStart - tunnelLength/2);
+            tunnel.add(ceiling);
+
+            // Walls
+            const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(tunnelLength, 1.85), tunnelMat);
+            leftWall.position.set(xOffset - 2, 0.925, zStart - tunnelLength/2);
+            leftWall.rotation.y = Math.PI / 2;
+            tunnel.add(leftWall);
+            addCollisionBox(xOffset - 2, 0.925, zStart - tunnelLength/2, 0.2, 1.85, tunnelLength);
+
+            const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(tunnelLength, 1.85), tunnelMat);
+            rightWall.position.set(xOffset + 2, 0.925, zStart - tunnelLength/2);
+            rightWall.rotation.y = -Math.PI / 2;
+            tunnel.add(rightWall);
+            addCollisionBox(xOffset + 2, 0.925, zStart - tunnelLength/2, 0.2, 1.85, tunnelLength);
+
+            // Light at end
+            const endLight = new THREE.PointLight(0xffffff, 2, 30);
+            endLight.position.set(xOffset, 1, zStart - tunnelLength);
+            tunnel.add(endLight);
+
+            scene.add(tunnel);
+        }
+
+        // Create Massive Chamber
+        function createMassiveChamber(zStart) {
+            const chamber = new THREE.Group();
+            const width = 40;
+            const depth = 26;
+
+            // Floor
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.set(0, 0, zStart - depth/2);
+            floor.receiveShadow = true;
+            chamber.add(floor);
+
+            // Ceiling
+            const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a });
+            const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), ceilingMat);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.set(0, 3.2, zStart - depth/2);
+            chamber.add(ceiling);
+
+            // Side walls with color accents
+            const leftWallMat = new THREE.MeshStandardMaterial({ color: 0x243245 });
+            const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(depth, 3.2), leftWallMat);
+            leftWall.position.set(-width/2, 1.6, zStart - depth/2);
+            leftWall.rotation.y = Math.PI / 2;
+            chamber.add(leftWall);
+            addCollisionBox(-width/2, 1.6, zStart - depth/2, 0.2, 3.2, depth);
+
+            const rightWallMat = new THREE.MeshStandardMaterial({ color: 0x2f3b32 });
+            const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(depth, 3.2), rightWallMat);
+            rightWall.position.set(width/2, 1.6, zStart - depth/2);
+            rightWall.rotation.y = -Math.PI / 2;
+            chamber.add(rightWall);
+            addCollisionBox(width/2, 1.6, zStart - depth/2, 0.2, 3.2, depth);
+
+            // Back wall
+            const backWallMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a });
+            const backWall = new THREE.Mesh(new THREE.PlaneGeometry(width, 3.2), backWallMat);
+            backWall.position.set(0, 1.6, zStart);
+            chamber.add(backWall);
+            addCollisionBox(0, 1.6, zStart, width, 3.2, 0.2);
+
+            // Front wall with openings
+            const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(width, 3.2), backWallMat);
+            frontWall.position.set(0, 1.6, zStart - depth);
+            frontWall.rotation.y = Math.PI;
+            chamber.add(frontWall);
+
+            // Eye logo on back wall
+            const logoTexture = new THREE.TextureLoader().load(
+                'Eye-White_Transparent.png',
+                undefined, // onLoad
+                undefined, // onProgress
+                (error) => {
+                    console.warn('Eye logo failed to load:', error);
+                }
+            );
+            const logoMat = new THREE.MeshBasicMaterial({ map: logoTexture, transparent: true });
+            const logo = new THREE.Mesh(new THREE.PlaneGeometry(15, 15), logoMat);
+            logo.position.set(0, 1.6, zStart - 0.1);
+            chamber.add(logo);
+
+            // Black door at base of logo
+            const doorMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const door = new THREE.Mesh(new THREE.PlaneGeometry(2, 2.5), doorMat);
+            door.position.set(0, 1.25, zStart - 0.05);
+            door.name = 'counterDoor';
+            chamber.add(door);
+
+            // Dramatic lighting
+            const mainLight = new THREE.PointLight(0xffffff, 2, 50);
+            mainLight.position.set(0, 3, zStart - depth/2);
+            chamber.add(mainLight);
+
+            const accentLight1 = new THREE.PointLight(0x243245, 1.5, 25);
+            accentLight1.position.set(-15, 2, zStart - depth/2);
+            chamber.add(accentLight1);
+
+            const accentLight2 = new THREE.PointLight(0x2f3b32, 1.5, 25);
+            accentLight2.position.set(15, 2, zStart - depth/2);
+            chamber.add(accentLight2);
+
+            scene.add(chamber);
+            return { doorPosition: new THREE.Vector3(0, 1.25, zStart - 0.05) };
+        }
+
+        // Build world
+        let counterDoorPos;
+        createOrientationRoom(WORLD_LAYOUT.ORIENTATION_1_Z);
+        createHallway('PURSUANCE', -10, WORLD_LAYOUT.HALLWAY_1_START_Z);
+        createHallway('SURVEILLANCE', 0, WORLD_LAYOUT.HALLWAY_1_START_Z);
+        createHallway('COMPLIANCE', 10, WORLD_LAYOUT.HALLWAY_1_START_Z);
+
+        createOrientationRoom(WORLD_LAYOUT.ORIENTATION_2_Z);
+        createHallway('PURSUANCE', -10, WORLD_LAYOUT.HALLWAY_2_START_Z);
+        createHallway('SURVEILLANCE', 0, WORLD_LAYOUT.HALLWAY_2_START_Z);
+        createHallway('COMPLIANCE', 10, WORLD_LAYOUT.HALLWAY_2_START_Z);
+
+        createOrientationRoom(WORLD_LAYOUT.ORIENTATION_3_Z);
+        createHallway('PURSUANCE', -10, WORLD_LAYOUT.HALLWAY_3_START_Z);
+        createHallway('SURVEILLANCE', 0, WORLD_LAYOUT.HALLWAY_3_START_Z);
+        createHallway('COMPLIANCE', 10, WORLD_LAYOUT.HALLWAY_3_START_Z);
+
+        // Third set leads to tunnel
+        if (gameState.completedHallways.length >= 3) {
+            createDarkTunnel(0, WORLD_LAYOUT.TUNNEL_START_Z);
+            const chamberData = createMassiveChamber(WORLD_LAYOUT.CHAMBER_Z);
+            counterDoorPos = chamberData.doorPosition;
+        } else {
+            createOrientationRoom(WORLD_LAYOUT.ORIENTATION_4_Z);
+        }
+
+        // Input handling
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            
+            if (e.key.toLowerCase() === 'c') {
+                gameState.crouching = !gameState.crouching;
+                camera.position.y = gameState.crouching ? 1.2 : 1.6;
+            }
+
+            if (e.key.toLowerCase() === 'f' && gameState.nearDoor) {
+                showCounterProgramForm();
+            }
+
+            if (e.key === 'Enter' && gameState.inElevator && !gameState.elevatorDoorsOpen) {
+                openElevatorDoors();
+            }
+
+            if (e.key === 'Shift') {
+                gameState.currentSpeed = gameState.sprintSpeed;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+            
+            if (e.key === 'Shift') {
+                gameState.currentSpeed = gameState.playerSpeed;
+            }
+        });
+
+        let isLocked = false;
+        document.addEventListener('click', () => {
+            if (!isLocked && !document.getElementById('welcomeOverlay').classList.contains('hidden')) {
+                return;
+            }
+            if (!isLocked) {
+                document.body.requestPointerLock();
+            }
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            isLocked = document.pointerLockElement === document.body;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isLocked) return;
+
+            const sensitivity = 0.002;
+            yaw -= e.movementX * sensitivity;
+            pitch -= e.movementY * sensitivity;
+            pitch = Math.max(-pitchLimit, Math.min(pitchLimit, pitch));
+
+            camera.rotation.set(pitch, yaw, 0);
+        });
+
+        // Collision detection
+        function checkCollision(position, radius = 0.3) {
+            for (let box of collisionBoxes) {
+                if (position.x - radius < box.max.x && position.x + radius > box.min.x &&
+                    position.y - 0.5 < box.max.y && position.y + 0.5 > box.min.y &&
+                    position.z - radius < box.max.z && position.z + radius > box.min.z) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Animation loop
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+
+            // Movement
+            direction.z = Number(keys['w']) - Number(keys['s']);
+            direction.x = Number(keys['d']) - Number(keys['a']);
+            direction.normalize();
+
+            const forward = new THREE.Vector3();
+            camera.getWorldDirection(forward);
+            forward.y = 0;
+            forward.normalize();
+
+            const right = new THREE.Vector3();
+            right.crossVectors(forward, new THREE.Vector3(0, 1, 0));
+
+            velocity.set(0, 0, 0);
+            if (direction.z !== 0) velocity.add(forward.multiplyScalar(-direction.z));
+            if (direction.x !== 0) velocity.add(right.multiplyScalar(direction.x));
+
+            if (velocity.length() > 0) {
+                velocity.normalize().multiplyScalar(gameState.currentSpeed * delta);
+                
+                const newPos = camera.position.clone().add(velocity);
+                if (!checkCollision(newPos)) {
+                    camera.position.copy(newPos);
+                }
+            }
+
+            // Check proximity to counter door
+            if (counterDoorPos) {
+                const dist = camera.position.distanceTo(counterDoorPos);
+                gameState.nearDoor = dist < 3;
+            }
+
+            // Check if player has exited elevator area
+            if (gameState.inElevator && camera.position.z < 4) {
+                gameState.inElevator = false;
+            }
+
+            // Track hallway completion
+            if (camera.position.z < -90 && !gameState.completedHallways.includes(0)) {
+                gameState.completedHallways.push(0);
+                localStorage.setItem('completedHallways', JSON.stringify(gameState.completedHallways));
+            }
+            if (camera.position.z < -200 && !gameState.completedHallways.includes(1)) {
+                gameState.completedHallways.push(1);
+                localStorage.setItem('completedHallways', JSON.stringify(gameState.completedHallways));
+            }
+            if (camera.position.z < -310 && !gameState.completedHallways.includes(2)) {
+                gameState.completedHallways.push(2);
+                localStorage.setItem('completedHallways', JSON.stringify(gameState.completedHallways));
+                // Trigger tunnel creation dynamically
+                if (gameState.completedHallways.length === 3 && !gameState.tunnelCreated) {
+                    gameState.tunnelCreated = true;
+                    createDarkTunnel(0, WORLD_LAYOUT.TUNNEL_START_Z);
+                    const chamberData = createMassiveChamber(WORLD_LAYOUT.CHAMBER_Z);
+                    counterDoorPos = chamberData.doorPosition;
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Elevator door animation
+        function openElevatorDoors() {
+            gameState.elevatorDoorsOpen = true;
+            const duration = 2000;
+            const startTime = Date.now();
+
+            function animateDoors() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                elevatorDoors.leftDoor.position.x = -1 - progress * 2;
+                elevatorDoors.rightDoor.position.x = 1 + progress * 2;
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateDoors);
+                }
+            }
+            animateDoors();
+        }
+
+        // UI Functions
+        document.getElementById('enterBtn').addEventListener('click', () => {
+            document.getElementById('welcomeOverlay').classList.add('hidden');
+            document.getElementById('controls').classList.remove('hidden');
+            document.body.requestPointerLock();
+        });
+
+        function showCounterProgramForm() {
+            document.getElementById('formOverlay').classList.add('active');
+            document.exitPointerLock();
+        }
+
+        function submitCounterProgram() {
+            const phone = document.getElementById('phoneInput').value;
+            if (phone.length > 0) {
+                document.getElementById('formContent').style.display = 'none';
+                document.getElementById('successMessage').classList.add('active');
+            }
+        }
+
+        function restartGame() {
+            localStorage.removeItem('completedHallways');
+            // Reset to elevator position
+            camera.position.set(0, 1.6, 0);
+            camera.rotation.set(0, 0, 0);
+            gameState.completedHallways = [];
+            gameState.inElevator = true;
+            gameState.elevatorDoorsOpen = false;
+            document.getElementById('formOverlay').classList.remove('active');
+            document.getElementById('successMessage').classList.remove('active');
+            document.getElementById('formContent').style.display = 'block';
+            document.getElementById('phoneInput').value = '';
+            // Note: Full scene rebuild would require page reload, but player can explore from elevator
+        }
+
+        function exploreRandom() {
+            const rooms = ['P', 'S', 'C'];
+            const room = rooms[Math.floor(Math.random() * rooms.length)];
+            const num = Math.floor(Math.random() * 10) + 1;
+            
+            const xPos = room === 'P' ? -10 : room === 'S' ? 0 : 10;
+            const zPos = -50 - Math.random() * 200;
+            
+            camera.position.set(xPos, 1.6, zPos);
+            document.getElementById('formOverlay').classList.remove('active');
+            document.body.requestPointerLock();
+        }
+
+        function learnMore() {
+            const topics = [
+                'https://en.wikipedia.org/wiki/Surveillance',
+                'https://en.wikipedia.org/wiki/Conspiracy_theory',
+                'https://en.wikipedia.org/wiki/Panopticon',
+                'https://en.wikipedia.org/wiki/Privacy',
+                'https://en.wikipedia.org/wiki/Big_Brother_(Nineteen_Eighty-Four)'
+            ];
+            window.open(topics[Math.floor(Math.random() * topics.length)], '_blank');
+        }
+
+        // Window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>
