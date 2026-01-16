@@ -80,7 +80,7 @@ function Experience({ onExit }: ExperienceProps) {
       {/* 3D Canvas */}
       <Canvas
         shadows
-        camera={{ position: [0, 1.6, 0], fov: 75 }}
+        camera={{ position: [0, 1.6, 2], fov: 75 }}
       >
         <Scene isPaused={showIntro || showExitMenu} />
       </Canvas>
