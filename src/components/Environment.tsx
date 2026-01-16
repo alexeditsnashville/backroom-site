@@ -21,23 +21,23 @@ function Environment() {
       const { condition } = trigger;
       let shouldTrigger = true;
 
-      // Check x conditions - trigger activates when position is outside the allowed range
+      // Check x conditions - trigger only if position is within the defined range
       if (condition.x) {
-        // If max is set, don't trigger if position is greater than max
+        // Don't trigger if position is greater than max (outside bounds on the right)
         if (condition.x.max !== undefined && pos.x > condition.x.max) shouldTrigger = false;
-        // If min is set, don't trigger if position is less than min
+        // Don't trigger if position is less than min (outside bounds on the left)
         if (condition.x.min !== undefined && pos.x < condition.x.min) shouldTrigger = false;
       }
 
-      // Check z conditions - trigger activates when position is outside the allowed range
+      // Check z conditions - trigger only if position is within the defined range
       if (condition.z) {
-        // If max is set, don't trigger if position is greater than max
+        // Don't trigger if position is greater than max (outside bounds forward)
         if (condition.z.max !== undefined && pos.z > condition.z.max) shouldTrigger = false;
-        // If min is set, don't trigger if position is less than min
+        // Don't trigger if position is less than min (outside bounds backward)
         if (condition.z.min !== undefined && pos.z < condition.z.min) shouldTrigger = false;
       }
 
-      // Trigger teleport if all conditions met
+      // Trigger teleport if all conditions met (position is within all specified ranges)
       if (shouldTrigger) {
         camera.position.set(spawnPos[0], spawnPos[1], spawnPos[2]);
         camera.rotation.set(0, 0, 0);
