@@ -1,0 +1,75 @@
+.experience {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experience__brand {
+  position: fixed;
+  top: 1.5rem;
+  left: 1.5rem;
+  z-index: 100;
+  color: #f8f4f0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.experience__fullscreen {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.5);
+  color: #f8f4f0;
+  border: 2px solid rgba(248, 244, 240, 0.3);
+  border-radius: 4px;
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.experience__fullscreen:hover {
+  background: rgba(0, 0, 0, 0.7);
+  border-color: rgba(248, 244, 240, 0.5);
+}
+
+.experience__menu-btn {
+  position: fixed;
+  top: 1.5rem;
+  right: 5rem;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.5);
+  color: #f8f4f0;
+  border: 2px solid rgba(248, 244, 240, 0.3);
+  border-radius: 4px;
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.experience__menu-btn:hover {
+  background: rgba(0, 0, 0, 0.7);
+  border-color: rgba(248, 244, 240, 0.5);
+}
+
+@media (max-width: 768px) {
+  .experience__menu-btn {
+    display: flex;
+  }
+}
