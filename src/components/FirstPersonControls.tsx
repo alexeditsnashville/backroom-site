@@ -2,14 +2,21 @@ import { useRef, useEffect } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
 import { PointerLockControls } from "@react-three/drei";
 import * as THREE from "three";
+import { PointerLockControls as PointerLockControlsImpl } from "three-stdlib";
 
 interface FirstPersonControlsProps {
   isPaused: boolean;
 }
 
+const NORMAL_SPEED = 3;
+const SPRINT_SPEED = 5;
+const NORMAL_HEIGHT = 1.6;
+const CROUCH_HEIGHT = 1.2;
+const CROUCH_INTERPOLATION_SPEED = 0.1;
+
 function FirstPersonControls({ isPaused }: FirstPersonControlsProps) {
   const { camera } = useThree();
-  const controlsRef = useRef<any>(null);
+  const controlsRef = useRef<PointerLockControlsImpl>(null);
   const velocity = useRef(new THREE.Vector3());
   const direction = useRef(new THREE.Vector3());
   const moveState = useRef({
@@ -86,11 +93,11 @@ function FirstPersonControls({ isPaused }: FirstPersonControlsProps) {
   useFrame((state, delta) => {
     if (isPaused || !controlsRef.current?.isLocked) return;
 
-    const speed = moveState.current.sprint ? 5 : 3;
-    const height = moveState.current.crouch ? 1.2 : 1.6;
+    const speed = moveState.current.sprint ? SPRINT_SPEED : NORMAL_SPEED;
+    const height = moveState.current.crouch ? CROUCH_HEIGHT : NORMAL_HEIGHT;
     
     // Update camera height for crouch
-    camera.position.y += (height - camera.position.y) * 0.1;
+    camera.position.y += (height - camera.position.y) * CROUCH_INTERPOLATION_SPEED;
 
     // Calculate movement direction
     direction.current.set(0, 0, 0);

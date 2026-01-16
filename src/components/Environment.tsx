@@ -3,6 +3,20 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import * as THREE from "three";
 
+// Player spawn/reset position
+const HUB_POSITION_X = 0;
+const HUB_POSITION_Y = 1.6;
+const HUB_POSITION_Z = 8;
+
+// Loop trigger boundaries
+const PURSUANCE_TRIGGER_X = -15;
+const COMPLIANCE_TRIGGER_X = 15;
+const SURVEILLANCE_TRIGGER_Z = 25;
+const HALLWAY_MIN_Z = 5;
+const HALLWAY_MAX_Z = 25;
+const CENTER_MIN_X = -5;
+const CENTER_MAX_X = 5;
+
 function Environment() {
   const { camera } = useThree();
 
@@ -11,23 +25,23 @@ function Environment() {
     const pos = camera.position;
     
     // Check PURSUANCE hallway loop (left side, far end)
-    if (pos.x < -15 && pos.z > 5 && pos.z < 25) {
+    if (pos.x < PURSUANCE_TRIGGER_X && pos.z > HALLWAY_MIN_Z && pos.z < HALLWAY_MAX_Z) {
       // Return to hub
-      camera.position.set(0, 1.6, 8);
+      camera.position.set(HUB_POSITION_X, HUB_POSITION_Y, HUB_POSITION_Z);
       camera.rotation.set(0, 0, 0);
     }
     
     // Check SURVEILLANCE hallway loop (center, far end)
-    if (pos.z > 25 && pos.x > -5 && pos.x < 5) {
+    if (pos.z > SURVEILLANCE_TRIGGER_Z && pos.x > CENTER_MIN_X && pos.x < CENTER_MAX_X) {
       // Return to hub
-      camera.position.set(0, 1.6, 8);
+      camera.position.set(HUB_POSITION_X, HUB_POSITION_Y, HUB_POSITION_Z);
       camera.rotation.set(0, 0, 0);
     }
     
     // Check COMPLIANCE hallway loop (right side, far end)
-    if (pos.x > 15 && pos.z > 5 && pos.z < 25) {
+    if (pos.x > COMPLIANCE_TRIGGER_X && pos.z > HALLWAY_MIN_Z && pos.z < HALLWAY_MAX_Z) {
       // Return to hub
-      camera.position.set(0, 1.6, 8);
+      camera.position.set(HUB_POSITION_X, HUB_POSITION_Y, HUB_POSITION_Z);
       camera.rotation.set(0, 0, 0);
     }
   });
