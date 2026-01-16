@@ -186,7 +186,7 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     
-    <img id="logo" src="RB_Text.png" alt="Really Bad">
+    <img id="logo" src="RB_Text.png" alt="Really Bad" onerror="this.style.display='none'">
     
     <div id="welcomeOverlay" class="overlay">
         <div class="welcome-panel">
@@ -237,7 +237,8 @@
             nearDoor: false,
             playerSpeed: 8,
             sprintSpeed: 15,
-            currentSpeed: 8
+            currentSpeed: 8,
+            tunnelCreated: JSON.parse(localStorage.getItem('completedHallways') || '[]').length >= 3
         };
 
         // Three.js Setup
@@ -644,7 +645,14 @@
             chamber.add(frontWall);
 
             // Eye logo on back wall
-            const logoTexture = new THREE.TextureLoader().load('Eye-White_Transparent.png');
+            const logoTexture = new THREE.TextureLoader().load(
+                'Eye-White_Transparent.png',
+                undefined, // onLoad
+                undefined, // onProgress
+                (error) => {
+                    console.warn('Eye logo failed to load:', error);
+                }
+            );
             const logoMat = new THREE.MeshBasicMaterial({ map: logoTexture, transparent: true });
             const logo = new THREE.Mesh(new THREE.PlaneGeometry(15, 15), logoMat);
             logo.position.set(0, 1.6, zStart - 0.1);
@@ -824,9 +832,11 @@
             if (camera.position.z < -310 && !gameState.completedHallways.includes(2)) {
                 gameState.completedHallways.push(2);
                 localStorage.setItem('completedHallways', JSON.stringify(gameState.completedHallways));
-                // Trigger tunnel creation
-                if (gameState.completedHallways.length === 3) {
-                    location.reload();
+                // Trigger tunnel creation dynamically
+                if (gameState.completedHallways.length === 3 && !gameState.tunnelCreated) {
+                    gameState.tunnelCreated = true;
+                    createDarkTunnel(0, -324);
+                    createMassiveChamber(-368);
                 }
             }
 
