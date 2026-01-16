@@ -1,0 +1,1111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>REALLY BAD</title>
+  <style>
+    html,body{margin:0;height:100%;overflow:hidden;background:#2a241d;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+    canvas{display:block}
+    #hud{position:fixed;left:16px;top:14px;z-index:10;color:rgba(255,255,255,.92);text-shadow:0 1px 10px rgba(0,0,0,.55);pointer-events:none;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    #hud strong{letter-spacing:.14em;text-transform:uppercase}
+    #hint,#status{font-size:12px;letter-spacing:.10em;text-transform:uppercase;opacity:.8}
+    #overlay{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at center,rgba(45,40,32,.20),rgba(22,20,18,.94));color:#fff;padding:24px}
+    #overlay .card{max-width:760px;border:1px solid rgba(255,255,255,.12);background:rgba(40,34,26,.58);border-radius:18px;padding:18px 18px 14px;box-shadow:0 14px 44px rgba(0,0,0,.42);text-align:center}
+    #overlay .title{font-size:16px;font-weight:900;margin-bottom:10px;letter-spacing:.12em;text-transform:uppercase}
+    #overlay .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+    #overlay button,#overlay a{padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.10);color:#fff;cursor:pointer;font-weight:900;letter-spacing:.10em;text-transform:uppercase;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+    #overlay button:hover,#overlay a:hover{background:rgba(255,255,255,.14)}
+    #enterMsg{display:none;opacity:.95;font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-top:10px;line-height:1.35;color:rgba(255,240,240,.95)}
+
+    #cpOverlay{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:radial-gradient(circle at center,rgba(45,40,32,.18),rgba(20,18,16,.96));color:#fff;padding:24px}
+    #cpOverlay .card{width:min(820px,96vw);border:1px solid rgba(255,255,255,.12);background:rgba(40,34,26,.58);border-radius:18px;padding:16px;box-shadow:0 14px 44px rgba(0,0,0,.42);text-align:center}
+    #cpOverlay .title{font-weight:900;letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px}
+    #cpOverlay .sub{opacity:.85;font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;line-height:1.35}
+    #cpOverlay input{width:min(420px,92vw);padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:rgba(255,255,255,.95);outline:none;font-size:16px;letter-spacing:.06em;text-align:center}
+    #cpOverlay .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+    #cpOverlay button{padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.10);color:#fff;cursor:pointer;font-weight:900;letter-spacing:.10em;text-transform:uppercase}
+    #cpOverlay button.primary{background:rgba(255,255,255,.14)}
+    #cpOverlay .err{margin-top:10px;opacity:.9;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,220,220,.95);display:none}
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div><strong>REALLY BAD</strong></div>
+    <div id="hint">WASD • SHIFT (SPRINT) • MOUSE • ENTER (ELEVATOR DOORS) • C TOGGLE (ELEVATOR) • CTRL HOLD (ELEVATOR) • F (DOOR) • E (EXIT)</div>
+    <div id="status"></div>
+  </div>
+
+  <div id="overlay">
+    <div class="card">
+      <div class="title">Welcome To Floor 7 1/2 At The Mertin Flemmer Building</div>
+      <div class="row">
+        <button id="enter">ENTER</button>
+        <a href="https://reallybadband.komi.io" target="_blank" rel="noopener noreferrer">MUSIC &amp; VIDEOS</a>
+      </div>
+      <div id="enterMsg"></div>
+    </div>
+  </div>
+
+  <div id="cpOverlay" aria-hidden="true">
+    <div class="card">
+      <div class="title">JOIN THE COUNTER PROGRAM</div>
+      <div class="sub">(ENTER YOUR PHONE NUMBER)</div>
+      <div><input id="phone" inputmode="tel" autocomplete="tel" placeholder="PHONE NUMBER" /></div>
+      <div class="actions" id="cpActions">
+        <button id="submitPhone" class="primary">SUBMIT</button>
+        <button id="cpCancel">CANCEL</button>
+      </div>
+      <div class="actions" id="afterJoin" style="display:none;">
+        <button id="explore" class="primary">EXPLORE</button>
+        <button id="listen">LISTEN</button>
+      </div>
+      <div class="err" id="cpErr"></div>
+    </div>
+  </div>
+
+  <!-- Bootstrap: always runs -->
+  <script>
+    (function(){
+      const statusEl = document.getElementById('status');
+      const overlay = document.getElementById('overlay');
+      const enterBtn = document.getElementById('enter');
+      const msg = document.getElementById('enterMsg');
+      if (statusEl) statusEl.textContent = 'BOOT';
+
+      window.addEventListener('error', (e)=>{
+        try{ console.error(e.error||e.message||e); }catch{}
+        if (statusEl) statusEl.textContent = 'BOOT ERROR';
+        if (msg){ msg.style.display='block'; msg.textContent='SCRIPT ERROR. OPEN DEVTOOLS → CONSOLE (FIRST RED LINE).'; }
+      });
+
+      function runEnter(){
+        if (typeof window.__rbEnter === 'function') window.__rbEnter();
+        else if (msg){ msg.style.display='block'; msg.textContent='3D NOT READY YET. WAIT 2s THEN CLICK ENTER AGAIN.'; }
+      }
+      enterBtn.addEventListener('click', (e)=>{ e.preventDefault(); runEnter(); });
+      window.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && overlay.style.display!=='none'){ e.preventDefault(); runEnter(); } });
+    })();
+  </script>
+
+  <!-- Three.js with fallback -->
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js'"></script>
+
+  <script>
+  (function(){
+    const statusEl = document.getElementById('status');
+    const overlay = document.getElementById('overlay');
+    const enterMsg = document.getElementById('enterMsg');
+    if (!window.THREE){
+      if (statusEl) statusEl.textContent = 'THREE FAILED TO LOAD';
+      if (enterMsg){ enterMsg.style.display='block'; enterMsg.textContent='THREE.JS FAILED TO LOAD (CDN BLOCKED).'; }
+      return;
+    }
+
+    // ---- Config ----
+    const ACCENT = 0xdc4d3c;
+    const CEIL_H = 1.85;            // low ceiling everywhere
+    const STAND_Y = 1.02;
+    const CROUCH_Y = 0.56;
+    const PLAYER_R = 0.38;
+    let PLAYER_HALF_H = 0.25;
+
+    const WALK = 3.0;
+    const SPRINT = 4.6;
+    const ACCEL = 18.0;
+    const DAMP = 11.0;
+
+    const ELEV = { x:0, z:-19.5, w:2.05, d:1.70 };
+    const LOBBY = { x:0, z:0, w:30, d:20 };
+    const HALL = { len:96, w:6.2, doors:10 };
+    const HALL_X = { COMPLIANCE:-10, SURVEILLANCE:0, PURSUANCE:10 };
+
+    // persistence
+    const url = new URLSearchParams(location.search);
+    if (url.has('reset')){ localStorage.removeItem('rb_completed'); sessionStorage.removeItem('rb_disable_cp'); sessionStorage.removeItem('rb_explore_only'); }
+    const exploreOnly = url.has('explore') || sessionStorage.getItem('rb_explore_only')==='1';
+    const cpDisabled = sessionStorage.getItem('rb_disable_cp')==='1';
+
+    const completed = new Set(JSON.parse(localStorage.getItem('rb_completed')||'[]'));
+    const saveCompletion = ()=>localStorage.setItem('rb_completed', JSON.stringify([...completed]));
+    const allComplete = ()=>completed.has('SURVEILLANCE') && completed.has('COMPLIANCE') && completed.has('PURSUANCE');
+
+    // ---- Scene ----
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x2a241d);
+    scene.fog = new THREE.FogExp2(0x2a241d, 0.012);
+
+    const camera = new THREE.PerspectiveCamera(78, innerWidth/innerHeight, 0.1, 420);
+
+    const renderer = new THREE.WebGLRenderer({ antialias:false, powerPreference:'high-performance' });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(1);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.74;
+    document.body.appendChild(renderer.domElement);
+
+    const ambient = new THREE.AmbientLight(0xfff3d1, 0.22);
+    scene.add(ambient);
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x3a3327, 0.18);
+    hemi.position.set(0,50,0);
+    scene.add(hemi);
+
+    const world = new THREE.Group();
+    scene.add(world);
+
+    // ---- Simple materials (keep this rewrite compact) ----
+    const mat = {
+      offWhite: new THREE.MeshStandardMaterial({ color:0xe7e1d3, roughness:0.98, metalness:0.0 }),
+      ceiling:  new THREE.MeshStandardMaterial({ color:0xf1ebdd, roughness:0.98, metalness:0.0 }),
+      charcoal: new THREE.MeshStandardMaterial({ color:0x5e5a54, roughness:0.98, metalness:0.0 }),
+      green:    new THREE.MeshStandardMaterial({ color:0x2f3b32, roughness:0.98, metalness:0.0 }),
+      navy:     new THREE.MeshStandardMaterial({ color:0x243245, roughness:0.98, metalness:0.0 }),
+      trim:     new THREE.MeshStandardMaterial({ color:0xb7ad9d, roughness:0.95, metalness:0.0 }),
+      accent:   new THREE.MeshStandardMaterial({ color:ACCENT, roughness:0.7, metalness:0.0 }),
+      elevWall: new THREE.MeshStandardMaterial({ color:0xa7a39b, roughness:0.55, metalness:0.12 }),
+      elevTrim: new THREE.MeshStandardMaterial({ color:0x8d887f, roughness:0.42, metalness:0.35 }),
+      wood:     new THREE.MeshStandardMaterial({ color:0x5a3a22, roughness:0.86, metalness:0.02 }),
+      steel:    new THREE.MeshStandardMaterial({ color:0xcfc9bf, roughness:0.28, metalness:0.68 }),
+      door:     new THREE.MeshStandardMaterial({ color:0x8d887f, roughness:0.55, metalness:0.15 }),
+      glass:    new THREE.MeshStandardMaterial({ color:0x0b0c0d, transparent:true, opacity:0.10, roughness:0.2, metalness:0.0 })
+    };
+
+    // Reduce z-fighting on coplanar elevator door surfaces
+    mat.door.polygonOffset = true;
+    // stronger offset to eliminate z-fighting shimmer against trim/frames
+    mat.door.polygonOffsetFactor = -3;
+    mat.door.polygonOffsetUnits = -3;
+
+    // ---- Collisions (bucketed AABBs) ----
+    const BUCKET = 12;
+    const buckets = new Map();
+    const bucketKey = (ix,iz)=>ix+','+iz;
+
+    function addColliderBox(box){
+      const obj={ box, active:true };
+      const minI=Math.floor(box.min.x/BUCKET), maxI=Math.floor(box.max.x/BUCKET);
+      const minK=Math.floor(box.min.z/BUCKET), maxK=Math.floor(box.max.z/BUCKET);
+      for(let ix=minI;ix<=maxI;ix++) for(let iz=minK;iz<=maxK;iz++){
+        const key=bucketKey(ix,iz);
+        if(!buckets.has(key)) buckets.set(key,[]);
+        buckets.get(key).push(obj);
+      }
+      return obj;
+    }
+
+    function addCollider(mesh){
+      const box=new THREE.Box3().setFromObject(mesh);
+      return addColliderBox(box);
+    }
+
+    function nearby(px,pz){
+      const ix=Math.floor(px/BUCKET), iz=Math.floor(pz/BUCKET);
+      const out=[];
+      for(let dx=-1;dx<=1;dx++) for(let dz=-1;dz<=1;dz++){
+        const arr=buckets.get(bucketKey(ix+dx,iz+dz));
+        if(arr) out.push(...arr);
+      }
+      return out;
+    }
+
+    function collides(px,py,pz){
+      const yMin=py-PLAYER_HALF_H, yMax=py+PLAYER_HALF_H;
+      for(const obj of nearby(px,pz)){
+        if(!obj.active) continue;
+        const b=obj.box;
+        if(px>=(b.min.x-PLAYER_R)&&px<=(b.max.x+PLAYER_R)&&pz>=(b.min.z-PLAYER_R)&&pz<=(b.max.z+PLAYER_R)&&yMax>=b.min.y&&yMin<=b.max.y) return true;
+      }
+      return false;
+    }
+
+    const WALL_T = 0.14;
+
+    function wallBox(cx,cy,cz,sx,sy,sz,m,coll=true){
+      const mesh=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),m);
+      mesh.position.set(cx,cy,cz);
+      world.add(mesh);
+      if(coll) addCollider(mesh);
+      return mesh;
+    }
+
+    function floorPlane(x,z,w,d,m){
+      const f=new THREE.Mesh(new THREE.PlaneGeometry(w,d),m);
+      f.rotation.x=-Math.PI/2;
+      f.position.set(x,0,z);
+      world.add(f);
+    }
+
+    function ceilPlane(x,z,w,d,h,m){
+      const c=new THREE.Mesh(new THREE.PlaneGeometry(w,d),m);
+      c.rotation.x=Math.PI/2;
+      c.position.set(x,h,z);
+      world.add(c);
+    }
+
+    // ---- Sign textures (simple canvas) ----
+    function plaqueTex(text){
+      const c=document.createElement('canvas'); c.width=512; c.height=192;
+      const g=c.getContext('2d');
+      g.fillStyle='rgba(244,238,223,1)'; g.fillRect(0,0,c.width,c.height);
+      g.strokeStyle='rgba(0,0,0,.12)'; g.lineWidth=6; g.strokeRect(14,14,c.width-28,c.height-28);
+      g.fillStyle='rgba(43,38,32,0.92)';
+      g.font='900 44px system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+      g.textAlign='center'; g.textBaseline='middle';
+      g.fillText(text, c.width/2, c.height/2);
+      const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.needsUpdate=true;
+      return t;
+    }
+
+    function addHeaderSign(text,x,z){
+      const tex=plaqueTex(text);
+      const face=new THREE.Mesh(new THREE.PlaneGeometry(4.0,0.34), new THREE.MeshStandardMaterial({ map:tex, roughness:0.65, metalness:0.0 }));
+      face.position.set(x,1.40,z);
+      face.rotation.y=Math.PI;
+      world.add(face);
+      const bar=new THREE.Mesh(new THREE.BoxGeometry(4.6,0.12,0.22), mat.trim);
+      bar.position.set(x,1.62,z+0.18);
+      world.add(bar);
+      const acc=new THREE.Mesh(new THREE.BoxGeometry(4.6,0.05,0.08), mat.accent);
+      acc.position.set(x,1.70,z+0.18);
+      world.add(acc);
+    }
+
+    // ---- Elevator ----
+    const elevArea = new THREE.Box3(
+      new THREE.Vector3(ELEV.x-ELEV.w/2+0.06, 0, ELEV.z-ELEV.d/2+0.06),
+      new THREE.Vector3(ELEV.x+ELEV.w/2-0.06, 2.2, ELEV.z+ELEV.d/2-0.06)
+    );
+    const isInElevator = (pos)=>elevArea.containsPoint(pos);
+
+    const elev={ open:false, t:0, left:null, right:null, leftColl:null, rightColl:null, floor7:null, floor8:null };
+
+    function buildElevator(){
+      // base box
+      floorPlane(ELEV.x,ELEV.z,ELEV.w,ELEV.d, mat.charcoal);
+      ceilPlane(ELEV.x,ELEV.z,ELEV.w,ELEV.d, CEIL_H, mat.ceiling);
+      const cy=CEIL_H/2;
+      wallBox(ELEV.x,cy,ELEV.z-ELEV.d/2, ELEV.w, CEIL_H, WALL_T, mat.elevWall);
+      wallBox(ELEV.x-ELEV.w/2,cy,ELEV.z, WALL_T, CEIL_H, ELEV.d, mat.elevWall);
+      wallBox(ELEV.x+ELEV.w/2,cy,ELEV.z, WALL_T, CEIL_H, ELEV.d, mat.elevWall);
+
+      const southZ=ELEV.z+ELEV.d/2;
+      const hatchW=1.55;
+      const hatchH=1.70;
+
+      // south wall with opening
+      const leftLen=(ELEV.x-hatchW/2)-(ELEV.x-ELEV.w/2);
+      if(leftLen>0.05) wallBox((ELEV.x-ELEV.w/2)+leftLen/2,cy,southZ, leftLen, CEIL_H, WALL_T, mat.elevWall);
+      const rightLen=(ELEV.x+ELEV.w/2)-(ELEV.x+hatchW/2);
+      if(rightLen>0.05) wallBox((ELEV.x+hatchW/2)+rightLen/2,cy,southZ, rightLen, CEIL_H, WALL_T, mat.elevWall);
+      // above hatch
+      wallBox(ELEV.x, (hatchH + (CEIL_H-hatchH)/2), southZ, hatchW, (CEIL_H-hatchH), WALL_T, mat.elevWall);
+
+      // wood panels
+      const panelH=1.55, panelY=0.78, inset=0.06;
+      const backPanel=new THREE.Mesh(new THREE.BoxGeometry(ELEV.w-0.14,panelH,0.04), mat.wood);
+      backPanel.position.set(ELEV.x,panelY,ELEV.z-ELEV.d/2+inset);
+      world.add(backPanel);
+      const leftPanel=new THREE.Mesh(new THREE.BoxGeometry(0.04,panelH,ELEV.d-0.14), mat.wood);
+      leftPanel.position.set(ELEV.x-ELEV.w/2+inset,panelY,ELEV.z);
+      world.add(leftPanel);
+      const rightPanel=new THREE.Mesh(new THREE.BoxGeometry(0.04,panelH,ELEV.d-0.14), mat.wood);
+      rightPanel.position.set(ELEV.x+ELEV.w/2-inset,panelY,ELEV.z);
+      world.add(rightPanel);
+
+      // rails
+      const railLen=ELEV.d-0.55;
+      const railBack=new THREE.Mesh(new THREE.BoxGeometry(ELEV.w-0.55,0.06,0.06), mat.steel);
+      railBack.position.set(ELEV.x,0.92,ELEV.z-ELEV.d/2+0.22);
+      world.add(railBack);
+      const railL=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.06,railLen), mat.steel);
+      railL.position.set(ELEV.x-ELEV.w/2+0.22,0.92,ELEV.z);
+      world.add(railL);
+      const railR=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.06,railLen), mat.steel);
+      railR.position.set(ELEV.x+ELEV.w/2-0.22,0.92,ELEV.z);
+      world.add(railR);
+
+      // ceiling light
+      const panel=new THREE.Mesh(new THREE.BoxGeometry(ELEV.w-0.55,0.04,ELEV.d-0.75), new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.25, metalness:0.0, emissive:0xffffff, emissiveIntensity:0.12 }));
+      panel.position.set(ELEV.x,CEIL_H-0.10,ELEV.z);
+      world.add(panel);
+      const light=new THREE.PointLight(0xffffff,0.30,10,1.6);
+      light.position.set(ELEV.x,CEIL_H-0.35,ELEV.z);
+      scene.add(light);
+
+      // indicator bar: 11 circles, 7 + 8 flicker (animated)
+      const indCanvas = document.createElement('canvas');
+      indCanvas.width = 1024; indCanvas.height = 180;
+      const indCtx = indCanvas.getContext('2d');
+      const indTex = new THREE.CanvasTexture(indCanvas);
+      indTex.colorSpace = THREE.SRGBColorSpace;
+      indTex.needsUpdate = true;
+
+      elev.drawIndicator = function(timeMs){
+        const g = indCtx;
+        const w = indCanvas.width, h = indCanvas.height;
+        g.clearRect(0,0,w,h);
+
+        // dark metal plate
+        g.fillStyle = 'rgba(18,16,14,0.92)';
+        g.fillRect(0,0,w,h);
+        g.strokeStyle = 'rgba(255,255,255,0.14)';
+        g.lineWidth = 10;
+        g.strokeRect(12,12,w-24,h-24);
+
+        const floors = 11;
+        const pad = 84;
+        const step = (w - pad*2) / floors;
+
+        // flicker for 7 and 8
+        const t = timeMs * 0.001;
+        const flick7 = 0.55 + 0.45*Math.max(0, Math.sin(t*18.0));
+        const flick8 = 0.55 + 0.45*Math.max(0, Math.sin((t+0.18)*16.0));
+
+        for(let i=1;i<=floors;i++){
+          const cx = pad + (i-0.5)*step;
+          const cy = 92;
+          const r  = 20;
+          const is78 = (i===7 || i===8);
+          const litA = (i===7)?flick7:((i===8)?flick8:0.0);
+
+          g.beginPath();
+          g.arc(cx,cy,r,0,Math.PI*2);
+          g.fillStyle = is78 ? `rgba(247,178,74,${0.92*litA})` : 'rgba(255,255,255,0.10)';
+          g.fill();
+          g.lineWidth = 6;
+          g.strokeStyle = is78 ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.12)';
+          g.stroke();
+
+          g.fillStyle = is78 ? 'rgba(18,16,14,0.92)' : 'rgba(255,255,255,0.74)';
+          g.font = '900 22px system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+          g.textAlign = 'center';
+          g.textBaseline = 'middle';
+          g.fillText(String(i), cx, cy+1);
+        }
+
+        indTex.needsUpdate = true;
+      };
+
+      // initial draw
+      elev.drawIndicator(Date.now());
+
+      const indMat = new THREE.MeshStandardMaterial({
+        map: indTex,
+        roughness: 0.35,
+        metalness: 0.25,
+        emissive: new THREE.Color(0xffffff),
+        emissiveIntensity: 0.35,
+        toneMapped: false
+      });
+
+      // Wood backer panel for the indicator (integrates it into the elevator interior)
+      const indBack = new THREE.Mesh(
+        new THREE.BoxGeometry(1.78, 0.34, 0.06),
+        mat.wood
+      );
+      indBack.position.set(ELEV.x, 1.70, southZ - 0.18);
+      indBack.rotation.y = Math.PI;
+      world.add(indBack);
+
+      // Smaller indicator face mounted on the wood panel
+      const ind = new THREE.Mesh(new THREE.PlaneGeometry(1.55, 0.26), indMat);
+      ind.position.set(ELEV.x, 1.70, southZ - 0.148);
+      ind.rotation.y = Math.PI;
+      ind.renderOrder = 6;
+      world.add(ind);
+
+      // Thin trim strip above the wood panel (subtle hardware detail)
+      const indTrim = new THREE.Mesh(
+        new THREE.BoxGeometry(1.88, 0.06, 0.08),
+        mat.elevTrim
+      );
+      indTrim.position.set(ELEV.x, 1.88, southZ - 0.18);
+      indTrim.rotation.y = Math.PI;
+      world.add(indTrim);
+
+      // sliding doors
+      const elevDoorH=hatchH-0.10, elevDoorY=elevDoorH/2+0.04, elevDoorT=0.06;
+      const leftD=new THREE.Mesh(new THREE.BoxGeometry(hatchW/2,elevDoorH,elevDoorT), mat.door);
+      // pull doors further off the wall plane and lift slightly to avoid floor-edge fighting
+      leftD.position.set(ELEV.x-hatchW/4, elevDoorY + 0.01, southZ-0.11);
+      world.add(leftD);
+      const rightD=new THREE.Mesh(new THREE.BoxGeometry(hatchW/2,elevDoorH,elevDoorT), mat.door);
+      // pull doors further off the wall plane and lift slightly to avoid floor-edge fighting
+      rightD.position.set(ELEV.x+hatchW/4, elevDoorY + 0.01, southZ-0.11);
+      world.add(rightD);
+      elev.left=leftD; elev.right=rightD;
+      elev.leftColl=addCollider(leftD);
+      elev.rightColl=addCollider(rightD);
+
+      // Door threshold/track (visual only) to hide bottom-edge shimmer artifacts
+      const threshold = new THREE.Mesh(
+        new THREE.BoxGeometry(hatchW + 0.18, 0.08, 0.16),
+        mat.elevTrim
+      );
+      threshold.position.set(ELEV.x, 0.04, southZ - 0.095);
+      world.add(threshold);
+
+      // (removed window panel above the door opening)
+
+      // --- 8th floor platform (the "between floors" slab)
+      // This slab represents the 8th-floor edge ABOVE you.
+      // It should block standing-height movement, but allow crouching underneath to reach 7 1/2.
+      const f8Y = 1.06;           // top surface height (crouch passes under; standing collides)
+      const f8W = 4.20;
+      const f8D = 6.20;
+      const f8T = 0.18;
+      const f8NearEdgeZ = southZ + 0.38;              // near edge is just beyond the doors
+      const f8CenterZ = f8NearEdgeZ + f8D / 2;
+
+      const f8Platform = new THREE.Mesh(new THREE.BoxGeometry(f8W, f8T, f8D), mat.offWhite);
+      f8Platform.position.set(ELEV.x, f8Y - f8T / 2, f8CenterZ);
+      world.add(f8Platform);
+      addCollider(f8Platform);
+
+
+      // The "8" should live ON the 8th floor (decal on the platform), small like the film reference
+      const eightC = document.createElement('canvas');
+      eightC.width = 512; eightC.height = 512;
+      const g8 = eightC.getContext('2d');
+      g8.fillStyle = 'rgb(225,220,210)';
+      g8.fillRect(0, 0, 512, 512);
+      g8.fillStyle = 'rgba(18,16,14,0.92)';
+      g8.font = '900 300px system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+      g8.textAlign = 'center';
+      g8.textBaseline = 'middle';
+      g8.fillText('8', 256, 286);
+      const eightT = new THREE.CanvasTexture(eightC);
+      eightT.colorSpace = THREE.SRGBColorSpace;
+      eightT.needsUpdate = true;
+
+      const eightMat = new THREE.MeshStandardMaterial({ map: eightT, roughness: 0.92, metalness: 0.0 });
+      // Prevent shimmer on the decal by biasing depth
+      eightMat.polygonOffset = true;
+      eightMat.polygonOffsetFactor = -2;
+      eightMat.polygonOffsetUnits = -2;
+
+      // Small "8" decal ON the 8th-floor slab (subtle, like the film reference)
+      const eightDecal = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.42), eightMat);
+      eightDecal.rotation.x = -Math.PI / 2;
+      eightDecal.position.set(ELEV.x, f8Y + 0.008, f8NearEdgeZ + 2.35);
+      eightDecal.renderOrder = 7;
+      world.add(eightDecal);
+
+      // --- 8th floor "lobby" vignette (no collisions; just something to see beyond)
+      const lobbyW = 7.2;
+      const lobbyD = 7.8;
+      const lobbyH = 2.25;
+      const lobbyX = ELEV.x;
+
+      // IMPORTANT: place lobby floor beyond the floor-8 slab to avoid z-fighting shimmer
+      const lobbyNearZ = f8NearEdgeZ + f8D + 0.10;
+      const lobbyZ = lobbyNearZ + lobbyD / 2;
+
+      // lobby floor plane at the 8th-floor height (visual only)
+      const lobbyFloor = new THREE.Mesh(new THREE.PlaneGeometry(lobbyW, lobbyD), mat.offWhite);
+      lobbyFloor.rotation.x = -Math.PI / 2;
+      lobbyFloor.position.set(lobbyX, f8Y + 0.024, lobbyZ);
+      world.add(lobbyFloor);
+
+      // lobby ceiling + soft light
+      const lobbyCeil = new THREE.Mesh(new THREE.PlaneGeometry(lobbyW, lobbyD), mat.ceiling);
+      lobbyCeil.rotation.x = Math.PI / 2;
+      lobbyCeil.position.set(lobbyX, f8Y + lobbyH, lobbyZ);
+      world.add(lobbyCeil);
+
+      const lobbyLightPanel = new THREE.Mesh(
+        new THREE.BoxGeometry(2.8, 0.05, 1.05),
+        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25, metalness: 0.0, emissive: 0xffffff, emissiveIntensity: 0.20 })
+      );
+      lobbyLightPanel.position.set(lobbyX, f8Y + lobbyH - 0.10, lobbyZ);
+      world.add(lobbyLightPanel);
+
+      const lobbyLight = new THREE.PointLight(0xffffff, 0.28, 16, 1.6);
+      lobbyLight.position.set(lobbyX, f8Y + lobbyH - 0.40, lobbyZ);
+      scene.add(lobbyLight);
+
+      // back wall + side walls (visual only)
+      wallBox(lobbyX, f8Y + lobbyH / 2, lobbyZ + lobbyD / 2, lobbyW, lobbyH, WALL_T, mat.offWhite, false);
+      wallBox(lobbyX - lobbyW / 2, f8Y + lobbyH / 2, lobbyZ, WALL_T, lobbyH, lobbyD, mat.offWhite, false);
+      wallBox(lobbyX + lobbyW / 2, f8Y + lobbyH / 2, lobbyZ, WALL_T, lobbyH, lobbyD, mat.offWhite, false);
+
+      // reception desk + seating (push FAR left + DEEP so it never blocks the doorway view)
+      const deskX = lobbyX - 2.85;
+      const deskZ = lobbyNearZ + 5.55;
+
+      const deskTop = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.10, 0.85), mat.wood);
+      deskTop.position.set(deskX, f8Y + 0.56, deskZ);
+      world.add(deskTop);
+
+      const deskBody = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.50, 0.68), mat.wood);
+      deskBody.position.set(deskX, f8Y + 0.25, deskZ + 0.05);
+      world.add(deskBody);
+
+      // simple chairs (keep them off-axis so they don't form a bar across the doorway)
+      function addChair(cx, cz){
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.08, 0.55), mat.trim);
+        seat.position.set(cx, f8Y + 0.32, cz);
+        world.add(seat);
+        const back = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.55, 0.08), mat.trim);
+        back.position.set(cx, f8Y + 0.62, cz - 0.24);
+        world.add(back);
+        const legMat = mat.elevTrim;
+        const leg1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.30, 0.06), legMat);
+        const leg2 = leg1.clone();
+        const leg3 = leg1.clone();
+        const leg4 = leg1.clone();
+        leg1.position.set(cx - 0.22, f8Y + 0.15, cz - 0.22);
+        leg2.position.set(cx + 0.22, f8Y + 0.15, cz - 0.22);
+        leg3.position.set(cx - 0.22, f8Y + 0.15, cz + 0.22);
+        leg4.position.set(cx + 0.22, f8Y + 0.15, cz + 0.22);
+        world.add(leg1, leg2, leg3, leg4);
+      }
+
+      // desk-side chairs (behind desk)
+      addChair(deskX + 0.80, deskZ - 0.85);
+      addChair(deskX + 1.60, deskZ - 0.85);
+
+      // waiting area (deep + right side so it reads as background detail)
+      addChair(lobbyX + 2.05, lobbyNearZ + 6.05);
+      addChair(lobbyX + 2.85, lobbyNearZ + 6.05);
+      const table = new THREE.Mesh(new THREE.BoxGeometry(0.90, 0.10, 0.55), mat.trim);
+      table.position.set(lobbyX + 2.45, f8Y + 0.30, lobbyNearZ + 6.65);
+      world.add(table);
+
+      // a subtle back accent strip to give depth
+      const backTrim = new THREE.Mesh(new THREE.BoxGeometry(lobbyW - 0.40, 0.10, 0.18), mat.trim);
+      backTrim.position.set(lobbyX, f8Y + 0.95, lobbyZ + lobbyD / 2 - 0.08);
+      world.add(backTrim);
+
+      // Crouch tunnel immediately outside elevator (no gaps)
+      const tunnel={ x:0, z:ELEV.z+ELEV.d/2+2.05, w:1.35, d:4.2, h:1.05 };
+
+      // Volume used to force crouch while you are in the 7 1/2 crawl tunnel
+      elev.tunnelBox = new THREE.Box3(
+        new THREE.Vector3(tunnel.x - tunnel.w/2 - 0.35, 0, tunnel.z - tunnel.d/2 - 0.30),
+        new THREE.Vector3(tunnel.x + tunnel.w/2 + 0.35, 2.2, tunnel.z + tunnel.d/2 + 0.30)
+      );
+      floorPlane(tunnel.x,tunnel.z,tunnel.w,tunnel.d, mat.offWhite);
+      ceilPlane(tunnel.x,tunnel.z,tunnel.w,tunnel.d, tunnel.h, mat.ceiling);
+      const tcy=tunnel.h/2;
+      wallBox(tunnel.x-tunnel.w/2,tcy,tunnel.z, WALL_T, tunnel.h, tunnel.d, mat.offWhite);
+      wallBox(tunnel.x+tunnel.w/2,tcy,tunnel.z, WALL_T, tunnel.h, tunnel.d, mat.offWhite);
+
+      // Invisible low-ceiling collider: forces crouch to pass into Floor 7 1/2.
+      // Standing head height is ~1.27 (STAND_Y 1.02 + PLAYER_HALF_H 0.25).
+      // Crouch head height is ~0.74 (CROUCH_Y 0.56 + PLAYER_HALF_H 0.18).
+      // This collider spans ~1.05–1.35 so it blocks standing but allows crouch.
+      const tunnelCeilCollider = new THREE.Mesh(
+        new THREE.BoxGeometry(tunnel.w + 0.40, 0.30, tunnel.d + 0.40),
+        mat.ceiling
+      );
+      tunnelCeilCollider.visible = false;
+      tunnelCeilCollider.position.set(tunnel.x, tunnel.h + 0.15, tunnel.z);
+      world.add(tunnelCeilCollider);
+      addCollider(tunnelCeilCollider);
+
+      // lintel to keep you crouched
+      const lintel=new THREE.Mesh(new THREE.BoxGeometry(2.6,0.28,0.30), mat.trim);
+      lintel.position.set(0,1.02, ELEV.z+ELEV.d/2+0.55);
+      world.add(lintel);
+      addCollider(lintel);
+    }
+
+    // ---- Lobby + corridor + hallways ----
+    const doors=[]; // hallway doors: { mesh, colliderObj, open }
+    const raycaster=new THREE.Raycaster();
+
+    function addDoor(x,z,rotY,doorMat){
+      const doorW=1.05, doorH=1.55, doorT=0.08;
+      const d=new THREE.Mesh(new THREE.BoxGeometry(doorW,doorH,doorT), doorMat);
+      d.position.set(x,doorH/2,z);
+      d.rotation.y=rotY;
+      world.add(d);
+      const col=addCollider(d);
+      doors.push({ mesh:d, colliderObj:col, open:false });
+      return d;
+    }
+
+    function lookDoor(maxDist=2.2){
+      const dir=new THREE.Vector3(); camera.getWorldDirection(dir);
+      raycaster.set(camera.position,dir); raycaster.far=maxDist;
+      const hits=raycaster.intersectObjects(doors.map(o=>o.mesh),false);
+      if(!hits.length) return null;
+      const obj=hits[0].object;
+      return doors.find(o=>o.mesh===obj)||null;
+    }
+
+    function toggleDoor(d){
+      d.open=!d.open;
+      d.colliderObj.active=!d.open;
+      const dir=new THREE.Vector3(Math.sin(d.mesh.rotation.y),0,Math.cos(d.mesh.rotation.y));
+      if(d.open) d.mesh.position.addScaledVector(dir,0.70);
+      else d.mesh.position.addScaledVector(dir,-0.70);
+    }
+
+    function buildLobby(){
+      // lobby floor/ceiling
+      floorPlane(0,0, LOBBY.w, LOBBY.d, mat.offWhite);
+      ceilPlane(0,0, LOBBY.w, LOBBY.d, CEIL_H, mat.ceiling);
+      const cy=CEIL_H/2;
+      // side walls
+      wallBox(-LOBBY.w/2,cy,0, WALL_T, CEIL_H, LOBBY.d, mat.offWhite);
+      wallBox( LOBBY.w/2,cy,0, WALL_T, CEIL_H, LOBBY.d, mat.offWhite);
+
+      // south wall with corridor opening
+      const southZ=-LOBBY.d/2;
+      const openW=5.0;
+      const leftLen=(-openW/2)-(-LOBBY.w/2);
+      if(leftLen>0.25) wallBox((-LOBBY.w/2)+leftLen/2,cy,southZ, leftLen, CEIL_H, WALL_T, mat.offWhite);
+      const rightLen=(LOBBY.w/2)-(openW/2);
+      if(rightLen>0.25) wallBox((openW/2)+rightLen/2,cy,southZ, rightLen, CEIL_H, WALL_T, mat.offWhite);
+
+      // north wall with 3 openings
+      const northZ=LOBBY.d/2;
+      const openingW=4.6;
+      const spans=[HALL_X.COMPLIANCE,HALL_X.SURVEILLANCE,HALL_X.PURSUANCE].map(x=>({a:x-openingW/2,b:x+openingW/2})).sort((p,q)=>p.a-q.a);
+      let cur=-LOBBY.w/2;
+      for(const s of spans){
+        const seg=s.a-cur;
+        if(seg>0.25) wallBox(cur+seg/2,cy,northZ, seg, CEIL_H, WALL_T, mat.offWhite);
+        cur=s.b;
+      }
+      const tail=(LOBBY.w/2)-cur;
+      if(tail>0.25) wallBox(cur+tail/2,cy,northZ, tail, CEIL_H, WALL_T, mat.offWhite);
+
+      // lobby lights
+      for(let i=0;i<4;i++){
+        const z=-5+i*4;
+        const panel=new THREE.Mesh(new THREE.BoxGeometry(3.2,0.05,0.95), new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.25, metalness:0.0, emissive:0xffffff, emissiveIntensity:0.22 }));
+        panel.position.set(0,CEIL_H-0.16,z);
+        world.add(panel);
+        const l=new THREE.PointLight(0xffffff,0.28,22,1.35);
+        l.position.set(0,CEIL_H-0.44,z);
+        scene.add(l);
+      }
+
+      // department signage
+      addHeaderSign('COMPLIANCE', HALL_X.COMPLIANCE, northZ-0.24);
+      addHeaderSign('SURVEILLANCE', HALL_X.SURVEILLANCE, northZ-0.24);
+      addHeaderSign('PURSUANCE', HALL_X.PURSUANCE, northZ-0.24);
+
+      // corridor from lobby down to tunnel
+      floorPlane(0,-9.0, 4.4, 10.0, mat.offWhite);
+      ceilPlane(0,-9.0, 4.4, 10.0, CEIL_H, mat.ceiling);
+      wallBox(-2.2,cy,-9.0, WALL_T, CEIL_H, 10.0, mat.offWhite);
+      wallBox( 2.2,cy,-9.0, WALL_T, CEIL_H, 10.0, mat.offWhite);
+    }
+
+    const deptList=[
+      { key:'COMPLIANCE', floor:mat.green, door:mat.green, subs:['POLITICAL PARTIES','FENTANYL','PORNOGRAPHY','CREDIT CARDS','SOCIAL MEDIA','DEBT','ALGORITHMS','DISTRACTIONS','FEAR CYCLES','THE FORMS ROOM'] },
+      { key:'SURVEILLANCE', floor:mat.charcoal, door:mat.charcoal, subs:['PHONES','SMARTWATCHES','SMART GLASSES','TELEVISIONS','KITCHEN DEVICES','SEARCH HISTORY','BANKS','CAMERAS','DATA BROKERS','SATELLITES'] },
+      { key:'PURSUANCE', floor:mat.navy, door:mat.navy, subs:['ADVERTISING','PHARMACEUTICAL','AG-BIOTECH','CHEM TRAILS','SPACE EXPLORATION','INFLUENCERS','PSYOPS','SIGNALS','NARRATIVES','DONKEYS & ELEPHANTS'] }
+    ];
+
+    const hallwayInfo=[];
+
+    function buildHallway(dept){
+      const hallX=HALL_X[dept.key];
+      const startZ=LOBBY.d/2;
+      const endZ=startZ+HALL.len;
+      // floor/ceil
+      floorPlane(hallX,startZ+HALL.len/2, HALL.w, HALL.len+0.4, dept.floor);
+      ceilPlane(hallX,startZ+HALL.len/2, HALL.w, HALL.len+0.4, CEIL_H, mat.ceiling);
+      const cy=CEIL_H/2;
+      // walls
+      wallBox(hallX,cy,endZ, HALL.w, CEIL_H, WALL_T, mat.offWhite);
+      wallBox(hallX-HALL.w/2,cy,startZ+HALL.len/2, WALL_T, CEIL_H, HALL.len+0.4, mat.offWhite);
+      wallBox(hallX+HALL.w/2,cy,startZ+HALL.len/2, WALL_T, CEIL_H, HALL.len+0.4, mat.offWhite);
+
+      // lights
+      for(let i=0;i<9;i++){
+        const t=i/8;
+        const z=startZ+6+t*(HALL.len-12);
+        const p=new THREE.Mesh(new THREE.BoxGeometry(2.6,0.05,0.72), new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.25, metalness:0.0, emissive:0xffffff, emissiveIntensity:0.24 }));
+        p.position.set(hallX,CEIL_H-0.16,z);
+        world.add(p);
+        const l=new THREE.PointLight(0xffffff,0.30,24,1.35);
+        l.position.set(hallX,CEIL_H-0.46,z);
+        scene.add(l);
+      }
+
+      // doors (staggered)
+      const usable=HALL.len-3.0;
+      const step=usable/(HALL.doors+1);
+      for(let i=0;i<HALL.doors;i++){
+        const z=startZ+7.5+(i+1)*step;
+        const side=(i%2===0)?-1:1;
+        const wallX=hallX+side*(HALL.w/2);
+        const doorX=wallX-side*0.10;
+        const rotY=(side===-1)?Math.PI/2:-Math.PI/2;
+
+        // frame
+        const frame=new THREE.Mesh(new THREE.BoxGeometry(1.25,1.62,0.10), mat.trim);
+        frame.position.set(doorX,0.81,z);
+        frame.rotation.y=rotY;
+        world.add(frame);
+
+        addDoor(doorX-side*0.06, z, rotY, dept.door);
+
+        // plaque
+        const label=dept.subs[i]||`ROOM ${i+1}`;
+        const tex=plaqueTex(label);
+        const plaque=new THREE.Mesh(new THREE.PlaneGeometry(0.82,0.30), new THREE.MeshStandardMaterial({ map:tex, roughness:0.65, metalness:0.0 }));
+        plaque.position.set(doorX+Math.cos(rotY)*0.10,1.22,z-Math.sin(rotY)*0.10);
+        plaque.rotation.y=rotY;
+        world.add(plaque);
+      }
+
+      // loop trigger
+      const trigger=new THREE.Box3(
+        new THREE.Vector3(hallX-HALL.w/2+0.4,0,endZ-2.2),
+        new THREE.Vector3(hallX+HALL.w/2-0.4,2.0,endZ-0.2)
+      );
+      hallwayInfo.push({ deptKey:dept.key, hallX, startZ, endZ, trigger });
+    }
+
+    // ---- Counter Program door group ----
+    const cpGroup=new THREE.Group();
+    scene.add(cpGroup);
+    cpGroup.visible=false;
+    const cp={ trigger:null, hallKey:null, logo:null, neon:null };
+
+    function buildCPAt(hall){
+      cpGroup.clear();
+      const x=hall.hallX;
+      const z=hall.endZ-0.55;
+      const door=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.6,0.10), mat.trim);
+      door.position.set(x,0.80,z);
+      cpGroup.add(door);
+      addCollider(door);
+
+      const logoMat=new THREE.MeshStandardMaterial({ color:0xffffff, transparent:true, roughness:0.25, metalness:0.0, emissive:new THREE.Color(0xffffff), emissiveIntensity:1.25, toneMapped:false });
+      const logo=new THREE.Mesh(new THREE.PlaneGeometry(2.4,1.9), logoMat);
+      logo.position.set(x,1.42,z-0.08);
+      logo.rotation.y=Math.PI;
+      cpGroup.add(logo);
+      cp.logo=logo;
+
+      new THREE.TextureLoader().load('./Eye-White_Transparent.png', (tex)=>{
+        tex.colorSpace=THREE.SRGBColorSpace;
+        logoMat.map=tex;
+        logoMat.needsUpdate=true;
+      });
+
+      const neon=new THREE.PointLight(0xffffff,0.80,9,2.0);
+      neon.position.set(x,1.42,z-0.55);
+      cpGroup.add(neon);
+      cp.neon=neon;
+
+      cp.trigger=new THREE.Box3(
+        new THREE.Vector3(x-1.4,0,z-1.6),
+        new THREE.Vector3(x+1.4,2.0,z+0.6)
+      );
+    }
+
+    function updateCP(){
+      if (exploreOnly || cpDisabled){ cpGroup.visible=false; return; }
+      cpGroup.visible = allComplete();
+      if (!cpGroup.visible) return;
+      const hall=hallwayInfo.find(h=>h.deptKey=== (cp.hallKey||'SURVEILLANCE')) || hallwayInfo[1];
+      buildCPAt(hall);
+    }
+
+    // ---- Build world ----
+    buildLobby();
+    for(const d of deptList) buildHallway(d);
+    buildElevator();
+    updateCP();
+
+    // ---- Input / pointer lock ----
+    statusEl.textContent='READY';
+
+    let yaw = Math.PI; // face elevator doors
+    let pitch = 0;
+
+    // Smooth mouse look targets (restores the "butter" feel)
+    let yawTarget = yaw;
+    let pitchTarget = pitch;
+    const MOUSE_SENS = 0.0019;     // smaller = slower
+    const LOOK_SMOOTH = 18.0;      // bigger = snappier (still smooth)
+
+    function onMouseMove(e){
+      yawTarget   -= (e.movementX || 0) * MOUSE_SENS;
+      // Invert Y so mouse-up looks up (not down)
+      pitchTarget += (e.movementY || 0) * MOUSE_SENS;
+      const lim = Math.PI/2 - 0.02;
+      pitchTarget = Math.max(-lim, Math.min(lim, pitchTarget));
+    }
+
+    function requestLock(){
+      overlay.style.display='none';
+      enterMsg.style.display='none';
+      renderer.domElement.requestPointerLock?.();
+      if(!document.__rbMouseAttached){
+        document.addEventListener('mousemove', onMouseMove);
+        document.__rbMouseAttached=true;
+      }
+      if (isInElevator(camera.position) && !elev.open) openElevator();
+    }
+    window.__rbEnter = requestLock;
+
+    document.addEventListener('pointerlockchange', ()=>{
+      const locked=(document.pointerLockElement===renderer.domElement);
+      if(locked){
+        overlay.style.display='none';
+        if(!document.__rbMouseAttached){
+          document.addEventListener('mousemove', onMouseMove);
+          document.__rbMouseAttached=true;
+        }
+      }
+    });
+
+    // Keys (use e.code for consistent controls)
+    const keys = new Set();
+    let crouchToggle = false;
+    let crouchHold = false;
+
+    function openElevator(){
+      if (elev.open) return;
+      elev.open = true;
+      elev.t = 0;
+      if (elev.leftColl)  elev.leftColl.active  = false;
+      if (elev.rightColl) elev.rightColl.active = false;
+    }
+
+    window.addEventListener('keydown', (e) => {
+      const k = e.code; // KeyW, KeyA, ShiftLeft, ControlLeft, Enter...
+      keys.add(k);
+
+      // Crouch controls ONLY while inside elevator
+      if (k === 'KeyC' && !e.repeat && isInElevator(camera.position)) {
+        crouchToggle = !crouchToggle;
+      }
+      if ((k === 'ControlLeft' || k === 'ControlRight') && isInElevator(camera.position)) {
+        crouchHold = true;
+      }
+
+      // Elevator door open
+      if (k === 'Enter' && isInElevator(camera.position)) {
+        openElevator();
+      }
+
+      // Door interaction
+      if (k === 'KeyF' && !e.repeat) {
+        const d = lookDoor(2.2);
+        if (d) toggleDoor(d);
+      }
+
+      // Exit / Counter Program
+      if (k === 'KeyE' && !e.repeat) {
+        if (cpGroup.visible && cp.trigger && cp.trigger.containsPoint(camera.position)) showCPOverlay();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      const k = e.code;
+      keys.delete(k);
+      if (k === 'ControlLeft' || k === 'ControlRight') crouchHold = false;
+    });
+
+    // ---- CP Overlay wiring ----
+    const cpOverlay=document.getElementById('cpOverlay');
+    const cpActions=document.getElementById('cpActions');
+    const afterJoin=document.getElementById('afterJoin');
+    const phoneEl=document.getElementById('phone');
+    const submitBtn=document.getElementById('submitPhone');
+    const cancelBtn=document.getElementById('cpCancel');
+    const exploreBtn=document.getElementById('explore');
+    const listenBtn=document.getElementById('listen');
+    const cpErr=document.getElementById('cpErr');
+
+    function showCPOverlay(){
+      cpOverlay.style.display='flex';
+      cpOverlay.setAttribute('aria-hidden','false');
+      cpActions.style.display='flex';
+      afterJoin.style.display='none';
+      cpErr.style.display='none';
+      cpErr.textContent='';
+      phoneEl.value='';
+      if(document.pointerLockElement) document.exitPointerLock();
+      setTimeout(()=>phoneEl.focus(), 30);
+    }
+    function hideCPOverlay(){
+      cpOverlay.style.display='none';
+      cpOverlay.setAttribute('aria-hidden','true');
+      setTimeout(()=>renderer.domElement.requestPointerLock?.(), 30);
+    }
+
+    function normalizePhone(raw){
+      const digits=(raw||'').replace(/\D/g,'');
+      return (digits.length>=10) ? { ok:true, digits } : { ok:false, digits };
+    }
+
+    submitBtn.addEventListener('click', ()=>{
+      const phone=phoneEl.value.trim();
+      const {ok,digits}=normalizePhone(phone);
+      if(!ok){ cpErr.style.display='block'; cpErr.textContent='PLEASE ENTER A VALID PHONE NUMBER.'; return; }
+      cpErr.style.display='none';
+      const leads=JSON.parse(localStorage.getItem('rb_leads')||'[]');
+      leads.push({ phone, digits, ts:new Date().toISOString() });
+      localStorage.setItem('rb_leads', JSON.stringify(leads));
+      cpActions.style.display='none';
+      afterJoin.style.display='flex';
+    });
+
+    cancelBtn.addEventListener('click', hideCPOverlay);
+    exploreBtn.addEventListener('click', ()=>{
+      sessionStorage.setItem('rb_explore_only','1');
+      sessionStorage.setItem('rb_disable_cp','1');
+      localStorage.removeItem('rb_completed');
+      location.href = location.pathname + '?explore=1&reset=1';
+    });
+    listenBtn.addEventListener('click', ()=>window.open('https://reallybadband.komi.io','_blank','noopener'));
+
+    // ---- Spawn (standing) ----
+    camera.position.set(ELEV.x, STAND_Y, ELEV.z-0.20);
+
+    // ---- Movement ----
+    const vel=new THREE.Vector3();
+    const wish=new THREE.Vector3();
+
+    function applyStance(){
+      const inElev = isInElevator(camera.position);
+      const inTunnel = (elev.tunnelBox && elev.tunnelBox.containsPoint(camera.position));
+
+      // You can toggle/hold crouch ONLY in the elevator, but once you enter the crawl tunnel
+      // we force crouch so you don’t snap-stand the instant you step out of the elevator.
+      const wantCrouch = inElev ? (crouchHold || crouchToggle) : (inTunnel ? true : false);
+
+      if(wantCrouch){
+        camera.position.y = CROUCH_Y;
+        PLAYER_HALF_H = 0.18;
+      } else {
+        camera.position.y = STAND_Y;
+        PLAYER_HALF_H = 0.25;
+      }
+    }
+
+    function tryMove(dx,dz){
+      const px=camera.position.x, py=camera.position.y, pz=camera.position.z;
+      if(!collides(px+dx,py,pz)) camera.position.x+=dx;
+      if(!collides(camera.position.x,py,pz+dz)) camera.position.z+=dz;
+    }
+
+    // ---- Elevator doors animate ----
+    function updateElevDoors(dt){
+      if(!elev.open || !elev.left || !elev.right) return;
+      elev.t=Math.min(1, elev.t+dt*1.2);
+      const openAmt=elev.t;
+      const hatchW=1.55;
+      elev.left.position.x  = ELEV.x - hatchW/4 - openAmt*(hatchW*0.30);
+      elev.right.position.x = ELEV.x + hatchW/4 + openAmt*(hatchW*0.30);
+    }
+
+     // ---- Hall looping ----
+    function handleLoops(){
+      for(const h of hallwayInfo){
+        if(h.trigger. containsPoint(camera.position)){
+          if(! completed.has(h. deptKey)){
+            completed.add(h.deptKey);
+            saveCompletion();
+            cp.hallKey=h.deptKey;
+            updateCP();
+          }
+          // Check if all 3 departments are complete
+          if(completed.size === 3){
+            // Show the massive chamber! 
+            showMassiveChamber();
+          } else {
+            // Teleport back to lobby for the infinite hallway illusion
+            camera.position.set(0, CROUCH_Y, (LOBBY.d/2) - 1.8);
+            yaw=Math.PI;
+            vel.set(0,0,0);
+          }
+          return;
+        }
+      }
+    }
+    // ---- CP shimmer ----
+    function updateCPGlow(t){
+      if(!cpGroup.visible || !cp.neon) return;
+      const s=0.65+0.20*Math.sin(t*2.2)+0.08*Math.sin(t*10.0);
+      cp.neon.intensity=0.75*s;
+      if(cp.logo && cp.logo.material) cp.logo.material.emissiveIntensity=1.0+0.45*s;
+    }
+
+    // ---- Loop ----
+    let last=performance.now();
+    function tick(now){
+      const dt=Math.min(0.033,(now-last)/1000);
+      last=now;
+
+      applyStance();
+
+      // smooth look (lerp toward targets)
+      const lookLerp = 1 - Math.exp(-LOOK_SMOOTH * dt);
+      yaw   += (yawTarget - yaw) * lookLerp;
+      pitch += (pitchTarget - pitch) * lookLerp;
+
+      // movement (FPS-style)
+      wish.set(0,0,0);
+      // Three.js camera forward is -Z when yaw=0, so forward must be (-sin, 0, -cos)
+      const f = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+      const r = new THREE.Vector3( Math.cos(yaw), 0, -Math.sin(yaw));
+
+      if (keys.has('KeyW')) wish.add(f);
+      if (keys.has('KeyS')) wish.addScaledVector(f, -1);
+      if (keys.has('KeyD')) wish.add(r);
+      if (keys.has('KeyA')) wish.addScaledVector(r, -1);
+
+      if (wish.lengthSq() > 0) wish.normalize();
+
+      const sprinting = keys.has('ShiftLeft') || keys.has('ShiftRight');
+      const maxSpd = sprinting ? SPRINT : WALK;
+
+      // make movement feel tighter / less floaty
+      const accel = 40.0;
+      const damp  = 28.0;
+
+      const tx = wish.x * maxSpd;
+      const tz = wish.z * maxSpd;
+      vel.x += (tx - vel.x) * Math.min(1, accel * dt);
+      vel.z += (tz - vel.z) * Math.min(1, accel * dt);
+
+      if (wish.lengthSq() === 0) {
+        const d = Math.max(0, 1 - damp * dt);
+        vel.x *= d;
+        vel.z *= d;
+      }
+
+      tryMove(vel.x * dt, vel.z * dt);
+
+      // hard bounds
+      camera.position.x=Math.max(-22,Math.min(22,camera.position.x));
+      camera.position.z=Math.max(-28,Math.min(112,camera.position.z));
+
+      updateElevDoors(dt);
+      if (typeof elev.drawIndicator === 'function') elev.drawIndicator(now);
+      handleLoops();
+      updateCPGlow(now/1000);
+
+      camera.rotation.set(pitch,yaw,0);
+      renderer.render(scene,camera);
+      requestAnimationFrame(tick);
+    }
+
+    // Start anim
+    requestAnimationFrame(tick);
+
+    // resize
+    window.addEventListener('resize',()=>{
+      camera.aspect=innerWidth/innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth,innerHeight);
+    });
+
+  })();
+  </script>
+</body>
+</html>
