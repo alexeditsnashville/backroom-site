@@ -64,25 +64,25 @@ function Environment() {
       {/* ================================================================== */}
       <group position={levelConfig.elevator.position as [number, number, number]}>
         {/* Back wall */}
-        <mesh position={[0, 2, -3]} castShadow>
+        <mesh position={[0, levelConfig.elevator.room.height / 2, -(levelConfig.elevator.room.depth / 2 + 1)]} castShadow>
           <boxGeometry args={[levelConfig.elevator.room.width, levelConfig.elevator.room.height, 0.2]} />
           <meshStandardMaterial color={levelConfig.materials.wall} />
         </mesh>
         
         {/* Left wall */}
-        <mesh position={[-2, 2, -1]} castShadow>
+        <mesh position={[-(levelConfig.elevator.room.width / 2), levelConfig.elevator.room.height / 2, -(levelConfig.elevator.room.depth / 2 - 1)]} castShadow>
           <boxGeometry args={[0.2, levelConfig.elevator.room.height, levelConfig.elevator.room.depth]} />
           <meshStandardMaterial color={levelConfig.materials.wall} />
         </mesh>
         
         {/* Right wall */}
-        <mesh position={[2, 2, -1]} castShadow>
+        <mesh position={[levelConfig.elevator.room.width / 2, levelConfig.elevator.room.height / 2, -(levelConfig.elevator.room.depth / 2 - 1)]} castShadow>
           <boxGeometry args={[0.2, levelConfig.elevator.room.height, levelConfig.elevator.room.depth]} />
           <meshStandardMaterial color={levelConfig.materials.wall} />
         </mesh>
 
         {/* Door frame */}
-        <mesh position={[0, 2, 1]} castShadow>
+        <mesh position={[0, levelConfig.elevator.room.height / 2, levelConfig.elevator.room.depth / 2 - 1]} castShadow>
           <boxGeometry args={[levelConfig.elevator.room.width, levelConfig.elevator.room.height, 0.1]} />
           <meshStandardMaterial color={levelConfig.materials.doorTransparent} transparent opacity={0.3} />
         </mesh>
@@ -93,19 +93,19 @@ function Environment() {
       {/* ================================================================== */}
       <group position={levelConfig.postElevatorHallway.position as [number, number, number]}>
         {/* Back wall */}
-        <mesh position={[0, 2, -8]} castShadow>
+        <mesh position={[0, levelConfig.postElevatorHallway.size.height / 2, -(levelConfig.postElevatorHallway.size.depth / 2 + 2)]} castShadow>
           <boxGeometry args={[levelConfig.postElevatorHallway.size.width, levelConfig.postElevatorHallway.size.height, 0.2]} />
           <meshStandardMaterial color={levelConfig.materials.wall} />
         </mesh>
         
         {/* Left wall */}
-        <mesh position={[-6, 2, -2]} castShadow>
+        <mesh position={[-(levelConfig.postElevatorHallway.size.width / 2), levelConfig.postElevatorHallway.size.height / 2, -(levelConfig.postElevatorHallway.size.depth / 2 - 4)]} castShadow>
           <boxGeometry args={[0.2, levelConfig.postElevatorHallway.size.height, levelConfig.postElevatorHallway.size.depth]} />
           <meshStandardMaterial color={levelConfig.materials.wall} />
         </mesh>
         
         {/* Right wall */}
-        <mesh position={[6, 2, -2]} castShadow>
+        <mesh position={[levelConfig.postElevatorHallway.size.width / 2, levelConfig.postElevatorHallway.size.height / 2, -(levelConfig.postElevatorHallway.size.depth / 2 - 4)]} castShadow>
           <boxGeometry args={[0.2, levelConfig.postElevatorHallway.size.height, levelConfig.postElevatorHallway.size.depth]} />
           <meshStandardMaterial color={levelConfig.materials.wall} />
         </mesh>
@@ -139,12 +139,12 @@ function Environment() {
         </mesh>
         
         {/* Wall sections flanking door and windows */}
-        <mesh position={[-5.25, 2, 4]} castShadow>
+        <mesh position={[-(levelConfig.postElevatorHallway.size.width / 2 - 0.75), levelConfig.postElevatorHallway.size.height / 2, levelConfig.postElevatorHallway.size.depth / 2 - 2]} castShadow>
           <boxGeometry args={[1.5, levelConfig.postElevatorHallway.size.height, 0.2]} />
           <meshStandardMaterial color={levelConfig.materials.wall} />
         </mesh>
         
-        <mesh position={[5.25, 2, 4]} castShadow>
+        <mesh position={[levelConfig.postElevatorHallway.size.width / 2 - 0.75, levelConfig.postElevatorHallway.size.height / 2, levelConfig.postElevatorHallway.size.depth / 2 - 2]} castShadow>
           <boxGeometry args={[1.5, levelConfig.postElevatorHallway.size.height, 0.2]} />
           <meshStandardMaterial color={levelConfig.materials.wall} />
         </mesh>
@@ -155,25 +155,25 @@ function Environment() {
       {/* ================================================================== */}
       <group position={levelConfig.hub.center as [number, number, number]}>
         {/* Left wall with opening to PURSUANCE */}
-        <mesh position={[-levelConfig.hub.size.width / 2, 2, 0]} castShadow>
+        <mesh position={[-levelConfig.hub.size.width / 2, levelConfig.hub.wallHeight / 2, 0]} castShadow>
           <boxGeometry args={[0.2, levelConfig.hub.wallHeight, levelConfig.hub.size.depth]} />
           <meshStandardMaterial color={levelConfig.materials.wall} />
         </mesh>
         
         {/* Right wall with opening to COMPLIANCE */}
-        <mesh position={[levelConfig.hub.size.width / 2, 2, 0]} castShadow>
+        <mesh position={[levelConfig.hub.size.width / 2, levelConfig.hub.wallHeight / 2, 0]} castShadow>
           <boxGeometry args={[0.2, levelConfig.hub.wallHeight, levelConfig.hub.size.depth]} />
           <meshStandardMaterial color={levelConfig.materials.wall} />
         </mesh>
         
         {/* Back corner walls */}
-        <mesh position={[-8, 2, -4]} castShadow>
-          <boxGeometry args={[4, levelConfig.hub.wallHeight, 0.2]} />
+        <mesh position={[-(levelConfig.hub.size.width / 2 - (levelConfig.hub.size.width / 5) / 2), levelConfig.hub.wallHeight / 2, -(levelConfig.hub.size.depth / 2)]} castShadow>
+          <boxGeometry args={[levelConfig.hub.size.width / 5, levelConfig.hub.wallHeight, 0.2]} />
           <meshStandardMaterial color={levelConfig.materials.wall} />
         </mesh>
         
-        <mesh position={[8, 2, -4]} castShadow>
-          <boxGeometry args={[4, levelConfig.hub.wallHeight, 0.2]} />
+        <mesh position={[levelConfig.hub.size.width / 2 - (levelConfig.hub.size.width / 5) / 2, levelConfig.hub.wallHeight / 2, -(levelConfig.hub.size.depth / 2)]} castShadow>
+          <boxGeometry args={[levelConfig.hub.size.width / 5, levelConfig.hub.wallHeight, 0.2]} />
           <meshStandardMaterial color={levelConfig.materials.wall} />
         </mesh>
       </group>
@@ -199,19 +199,19 @@ function Environment() {
             </Text>
             
             {/* Left wall */}
-            <mesh position={[-halfWidth, 2, halfLength]} castShadow>
+            <mesh position={[-halfWidth, hw.wallHeight / 2, halfLength]} castShadow>
               <boxGeometry args={[0.2, hw.wallHeight, hw.length]} />
               <meshStandardMaterial color={levelConfig.materials.wall} />
             </mesh>
             
             {/* Right wall */}
-            <mesh position={[halfWidth, 2, halfLength]} castShadow>
+            <mesh position={[halfWidth, hw.wallHeight / 2, halfLength]} castShadow>
               <boxGeometry args={[0.2, hw.wallHeight, hw.length]} />
               <meshStandardMaterial color={levelConfig.materials.wall} />
             </mesh>
             
             {/* End wall */}
-            <mesh position={[0, 2, hw.length]} castShadow>
+            <mesh position={[0, hw.wallHeight / 2, hw.length]} castShadow>
               <boxGeometry args={[hw.width, hw.wallHeight, 0.2]} />
               <meshStandardMaterial color={levelConfig.materials.wall} />
             </mesh>
@@ -231,7 +231,7 @@ function Environment() {
               ))
             ) : (
               // Standard solid back wall
-              <mesh position={[0, 2, 0]} castShadow>
+              <mesh position={[0, hw.wallHeight / 2, 0]} castShadow>
                 <boxGeometry args={[hw.width, hw.wallHeight, 0.2]} />
                 <meshStandardMaterial color={levelConfig.materials.wall} />
               </mesh>
