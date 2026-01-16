@@ -19,50 +19,41 @@ body {
   background: radial-gradient(circle at top left, #2b1c25, #0e0f12 45%);
 }
 
-.backroom {
+.landing {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  gap: 3.5rem;
-  padding: 4rem 6vw 5rem;
+  padding: 2rem;
 }
 
-.hero {
-  max-width: 540px;
-  display: grid;
-  gap: 1.5rem;
-}
-
-.hero h1 {
-  font-size: clamp(2.8rem, 4vw, 4rem);
-  letter-spacing: -0.03em;
-}
-
-.hero__eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.32em;
-  font-size: 0.75rem;
-  color: #cbbac2;
-}
-
-.hero p {
-  color: #e5d8dd;
-  font-size: 1.05rem;
-}
-
-.hero__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
+.landing__content {
+  text-align: center;
 }
 
 .btn {
-  border-radius: 999px;
-  padding: 0.85rem 1.6rem;
-  font-size: 0.95rem;
-  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid transparent;
   transition: all 0.2s ease;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btn--cta {
+  background: #f5b68b;
+  color: #1d1115;
+  border-color: #f5b68b;
+  font-size: 1.2rem;
+  padding: 1.2rem 3rem;
+  letter-spacing: 0.1em;
+}
+
+.btn--cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 182, 139, 0.3);
 }
 
 .btn--primary {
@@ -71,50 +62,16 @@ body {
   border-color: #f5b68b;
 }
 
+.btn--primary:hover {
+  transform: translateY(-2px);
+}
+
 .btn--ghost {
   background: transparent;
   color: #f8f4f0;
   border-color: rgba(248, 244, 240, 0.35);
 }
 
-.btn:hover {
-  transform: translateY(-2px);
-}
-
-.features {
-  display: grid;
-  gap: 2rem;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-
-.features h2 {
-  font-size: 1.3rem;
-  margin-bottom: 0.65rem;
-}
-
-.features p {
-  color: #d4c7cc;
-}
-
-.details {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  padding-top: 1rem;
-  border-top: 1px solid rgba(248, 244, 240, 0.15);
-}
-
-.details h2 {
-  font-size: 1.1rem;
-  margin-bottom: 0.35rem;
-}
-
-.details p {
-  color: #c9bcc3;
-}
-
-@media (max-width: 720px) {
-  .backroom {
-    padding: 3.5rem 6vw 4rem;
-  }
+.btn--ghost:hover {
+  background: rgba(248, 244, 240, 0.1);
 }
