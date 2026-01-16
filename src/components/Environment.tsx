@@ -217,10 +217,25 @@ function Environment() {
             </mesh>
             
             {/* Back wall (entrance from hub) */}
-            <mesh position={[0, 2, 0]} castShadow>
-              <boxGeometry args={[hw.width, hw.wallHeight, 0.2]} />
-              <meshStandardMaterial color={levelConfig.materials.wall} />
-            </mesh>
+            {dept.entrance.wallSections ? (
+              // Special entrance with split wall sections (e.g., SURVEILLANCE)
+              dept.entrance.wallSections.map((section, idx) => (
+                <mesh 
+                  key={`wall-section-${idx}`}
+                  position={section.position as [number, number, number]} 
+                  castShadow
+                >
+                  <boxGeometry args={section.size as [number, number, number]} />
+                  <meshStandardMaterial color={levelConfig.materials.wall} />
+                </mesh>
+              ))
+            ) : (
+              // Standard solid back wall
+              <mesh position={[0, 2, 0]} castShadow>
+                <boxGeometry args={[hw.width, hw.wallHeight, 0.2]} />
+                <meshStandardMaterial color={levelConfig.materials.wall} />
+              </mesh>
+            )}
           </group>
         );
       })}

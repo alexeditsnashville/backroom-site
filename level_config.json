@@ -45,7 +45,17 @@
       "labelColor": "#f5b68b",
       "entrance": {
         "position": [0, 0, 12],
-        "direction": "forward"
+        "direction": "forward",
+        "wallSections": [
+          {
+            "position": [-3.75, 2, 0],
+            "size": [2.5, 4, 0.2]
+          },
+          {
+            "position": [3.75, 2, 0],
+            "size": [2.5, 4, 0.2]
+          }
+        ]
       },
       "hallway": {
         "center": [0, 0, 16],
