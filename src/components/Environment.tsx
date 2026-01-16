@@ -2,241 +2,158 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import levelConfig from "../../level_config.json";
 
-// ============================================================================
-// COMPONENT
-// ============================================================================
+type Vec3 = [number, number, number];
+
+type LoopTrigger = {
+  condition?: {
+    x?: { min?: number; max?: number };
+    z?: { min?: number; max?: number };
+  };
+};
+
+function asVec3(v: any, fallback: Vec3): Vec3 {
+  return Array.isArray(v) && v.length === 3 ? [v[0], v[1], v[2]] : fallback;
+}
 
 function Environment() {
   const { camera } = useThree();
 
-  // Extract spawn position from config
-  const spawnPos = levelConfig.spawn.position;
+  const spawnPos = asVec3((levelConfig as any)?.spawn?.position, [0, 1.6, 2]);
+  const spawnRot = asVec3((levelConfig as any)?.spawn?.rotation, [0, 0, 0]);
+
+  const triggers: LoopTrigger[] = ((levelConfig as any)?.loopTriggers ?? []) as LoopTrigger[];
 
   // Loop detection - reset camera when player reaches hallway end
   useFrame(() => {
     const pos = camera.position;
-    
-    // Check each loop trigger from config
-    levelConfig.loopTriggers.forEach((trigger) => {
-      const { condition } = trigger;
+
+    for (const trigger of triggers) {
+      const c = trigger?.condition;
+      if (!c) continue;
+
       let shouldTrigger = true;
 
-      // Check x conditions - trigger only if position is within the defined range
-      if (condition.x) {
-        // Don't trigger if position is greater than max (outside bounds on the right)
-        if (condition.x.max !== undefined && pos.x > condition.x.max) shouldTrigger = false;
-        // Don't trigger if position is less than min (outside bounds on the left)
-        if (condition.x.min !== undefined && pos.x < condition.x.min) shouldTrigger = false;
+      if (c.x) {
+        if (c.x.max !== undefined && pos.x > c.x.max) shouldTrigger = false;
+        if (c.x.min !== undefined && pos.x < c.x.min) shouldTrigger = false;
       }
 
-      // Check z conditions - trigger only if position is within the defined range
-      if (condition.z) {
-        // Don't trigger if position is greater than max (outside bounds forward)
-        if (condition.z.max !== undefined && pos.z > condition.z.max) shouldTrigger = false;
-        // Don't trigger if position is less than min (outside bounds backward)
-        if (condition.z.min !== undefined && pos.z < condition.z.min) shouldTrigger = false;
+      if (c.z) {
+        if (c.z.max !== undefined && pos.z > c.z.max) shouldTrigger = false;
+        if (c.z.min !== undefined && pos.z < c.z.min) shouldTrigger = false;
       }
 
-      // Trigger teleport if all conditions met (position is within all specified ranges)
       if (shouldTrigger) {
         camera.position.set(spawnPos[0], spawnPos[1], spawnPos[2]);
-        camera.rotation.set(0, 0, 0);
+        camera.rotation.set(spawnRot[0], spawnRot[1], spawnRot[2]);
+        break;
       }
-    });
+    }
   });
+
+  // Basic materials / defaults
+  const wallColor = ((levelConfig as any)?.materials?.wall as string) ?? "#2a2a2a";
+  const floorColor = ((levelConfig as any)?.floor?.color as string) ?? "#1b1b1b";
+
+  // Floor
+  const floorPos = asVec3((levelConfig as any)?.floor?.position, [0, 0, 0]);
+  const floorSize = (Array.isArray((levelConfig as any)?.floor?.size) ? (levelConfig as any).floor.size : [80, 80]) as [number, number];
+
+  // Elevator blockout
+  const elevPos = asVec3((levelConfig as any)?.elevator?.position, [0, 0, -10]);
+  const elevRoom = (levelConfig as any)?.elevator?.room ?? { width: 4, height: 2.2, depth: 4 };
+
+  // Hallway blockout
+  const hallPos = asVec3((levelConfig as any)?.postElevatorHallway?.position, [0, 0, -4]);
+  const hallSize = (levelConfig as any)?.postElevatorHallway?.size ?? { width: 10, height: 2.2, depth: 14 };
+
+  // Simple department labels
+  const departments = ((levelConfig as any)?.departments ?? []) as any[];
 
   return (
     <>
-      {/* ================================================================== */}
-      {/* FLOOR                                                              */}
-      {/* ================================================================== */}
-      <mesh 
-        receiveShadow 
-        rotation={[-Math.PI / 2, 0, 0]} 
-        position={levelConfig.floor.position as [number, number, number]}
+      {/* Floor */}
+      <mesh
+        receiveShadow
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={floorPos}
       >
-        <planeGeometry args={levelConfig.floor.size as [number, number]} />
-        <meshStandardMaterial color={levelConfig.floor.color} />
+        <planeGeometry args={floorSize} />
+        <meshStandardMaterial color={floorColor} />
       </mesh>
 
-      {/* ================================================================== */}
-      {/* ELEVATOR START AREA                                                */}
-      {/* ================================================================== */}
-      <group position={levelConfig.elevator.position as [number, number, number]}>
+      {/* Elevator room (simple boxy walls) */}
+      <group position={elevPos}>
         {/* Back wall */}
-        <mesh position={[0, levelConfig.elevator.room.height / 2, -(levelConfig.elevator.room.depth / 2 + 1)]} castShadow>
-          <boxGeometry args={[levelConfig.elevator.room.width, levelConfig.elevator.room.height, 0.2]} />
-          <meshStandardMaterial color={levelConfig.materials.wall} />
-        </mesh>
-        
-        {/* Left wall */}
-        <mesh position={[-(levelConfig.elevator.room.width / 2), levelConfig.elevator.room.height / 2, -(levelConfig.elevator.room.depth / 2 - 1)]} castShadow>
-          <boxGeometry args={[0.2, levelConfig.elevator.room.height, levelConfig.elevator.room.depth]} />
-          <meshStandardMaterial color={levelConfig.materials.wall} />
-        </mesh>
-        
-        {/* Right wall */}
-        <mesh position={[levelConfig.elevator.room.width / 2, levelConfig.elevator.room.height / 2, -(levelConfig.elevator.room.depth / 2 - 1)]} castShadow>
-          <boxGeometry args={[0.2, levelConfig.elevator.room.height, levelConfig.elevator.room.depth]} />
-          <meshStandardMaterial color={levelConfig.materials.wall} />
+        <mesh castShadow position={[0, elevRoom.height / 2, -(elevRoom.depth / 2)]}>
+          <boxGeometry args={[elevRoom.width, elevRoom.height, 0.2]} />
+          <meshStandardMaterial color={wallColor} />
         </mesh>
 
-        {/* Door frame */}
-        <mesh position={[0, levelConfig.elevator.room.height / 2, levelConfig.elevator.room.depth / 2 - 1]} castShadow>
-          <boxGeometry args={[levelConfig.elevator.room.width, levelConfig.elevator.room.height, 0.1]} />
-          <meshStandardMaterial color={levelConfig.materials.doorTransparent} transparent opacity={0.3} />
+        {/* Left wall */}
+        <mesh castShadow position={[-elevRoom.width / 2, elevRoom.height / 2, 0]}>
+          <boxGeometry args={[0.2, elevRoom.height, elevRoom.depth]} />
+          <meshStandardMaterial color={wallColor} />
+        </mesh>
+
+        {/* Right wall */}
+        <mesh castShadow position={[elevRoom.width / 2, elevRoom.height / 2, 0]}>
+          <boxGeometry args={[0.2, elevRoom.height, elevRoom.depth]} />
+          <meshStandardMaterial color={wallColor} />
+        </mesh>
+
+        {/* Door frame hint */}
+        <mesh castShadow position={[0, elevRoom.height / 2, elevRoom.depth / 2]}>
+          <boxGeometry args={[elevRoom.width, elevRoom.height, 0.1]} />
+          <meshStandardMaterial color={"#111"} transparent opacity={0.25} />
         </mesh>
       </group>
 
-      {/* ================================================================== */}
-      {/* POST-ELEVATOR HALLWAY (with orientation door and windows)          */}
-      {/* ================================================================== */}
-      <group position={levelConfig.postElevatorHallway.position as [number, number, number]}>
-        {/* Back wall */}
-        <mesh position={[0, levelConfig.postElevatorHallway.size.height / 2, -(levelConfig.postElevatorHallway.size.depth / 2 + 2)]} castShadow>
-          <boxGeometry args={[levelConfig.postElevatorHallway.size.width, levelConfig.postElevatorHallway.size.height, 0.2]} />
-          <meshStandardMaterial color={levelConfig.materials.wall} />
-        </mesh>
-        
+      {/* Post-elevator hallway (simple corridor) */}
+      <group position={hallPos}>
         {/* Left wall */}
-        <mesh position={[-(levelConfig.postElevatorHallway.size.width / 2), levelConfig.postElevatorHallway.size.height / 2, -(levelConfig.postElevatorHallway.size.depth / 2 - 4)]} castShadow>
-          <boxGeometry args={[0.2, levelConfig.postElevatorHallway.size.height, levelConfig.postElevatorHallway.size.depth]} />
-          <meshStandardMaterial color={levelConfig.materials.wall} />
-        </mesh>
-        
-        {/* Right wall */}
-        <mesh position={[levelConfig.postElevatorHallway.size.width / 2, levelConfig.postElevatorHallway.size.height / 2, -(levelConfig.postElevatorHallway.size.depth / 2 - 4)]} castShadow>
-          <boxGeometry args={[0.2, levelConfig.postElevatorHallway.size.height, levelConfig.postElevatorHallway.size.depth]} />
-          <meshStandardMaterial color={levelConfig.materials.wall} />
+        <mesh castShadow position={[-hallSize.width / 2, hallSize.height / 2, hallSize.depth / 2]}>
+          <boxGeometry args={[0.2, hallSize.height, hallSize.depth]} />
+          <meshStandardMaterial color={wallColor} />
         </mesh>
 
-        {/* ORIENTATION door (center) */}
-        <mesh position={levelConfig.postElevatorHallway.orientationDoor.position as [number, number, number]} castShadow>
-          <boxGeometry args={levelConfig.postElevatorHallway.orientationDoor.size as [number, number, number]} />
-          <meshStandardMaterial color={levelConfig.materials.door} />
+        {/* Right wall */}
+        <mesh castShadow position={[hallSize.width / 2, hallSize.height / 2, hallSize.depth / 2]}>
+          <boxGeometry args={[0.2, hallSize.height, hallSize.depth]} />
+          <meshStandardMaterial color={wallColor} />
         </mesh>
-        
+
+        {/* End wall */}
+        <mesh castShadow position={[0, hallSize.height / 2, hallSize.depth]}>
+          <boxGeometry args={[hallSize.width, hallSize.height, 0.2]} />
+          <meshStandardMaterial color={wallColor} />
+        </mesh>
+
         <Text
-          position={levelConfig.postElevatorHallway.orientationDoor.labelPosition as [number, number, number]}
-          fontSize={levelConfig.postElevatorHallway.orientationDoor.labelSize}
-          color={levelConfig.materials.labelDefault}
+          position={[0, 1.3, hallSize.depth - 1]}
+          fontSize={0.35}
+          color={"#c9b98a"}
           anchorX="center"
           anchorY="middle"
         >
-          {levelConfig.postElevatorHallway.orientationDoor.label}
+          ORIENTATION
         </Text>
-
-        {/* Left window */}
-        <mesh position={levelConfig.postElevatorHallway.windows[0].position as [number, number, number]} castShadow>
-          <boxGeometry args={levelConfig.postElevatorHallway.windows[0].size as [number, number, number]} />
-          <meshStandardMaterial color={levelConfig.materials.window} transparent opacity={0.5} />
-        </mesh>
-        
-        {/* Right window */}
-        <mesh position={levelConfig.postElevatorHallway.windows[1].position as [number, number, number]} castShadow>
-          <boxGeometry args={levelConfig.postElevatorHallway.windows[1].size as [number, number, number]} />
-          <meshStandardMaterial color={levelConfig.materials.window} transparent opacity={0.5} />
-        </mesh>
-        
-        {/* Wall sections flanking door and windows */}
-        <mesh position={[-(levelConfig.postElevatorHallway.size.width / 2 - 0.75), levelConfig.postElevatorHallway.size.height / 2, levelConfig.postElevatorHallway.size.depth / 2 - 2]} castShadow>
-          <boxGeometry args={[1.5, levelConfig.postElevatorHallway.size.height, 0.2]} />
-          <meshStandardMaterial color={levelConfig.materials.wall} />
-        </mesh>
-        
-        <mesh position={[levelConfig.postElevatorHallway.size.width / 2 - 0.75, levelConfig.postElevatorHallway.size.height / 2, levelConfig.postElevatorHallway.size.depth / 2 - 2]} castShadow>
-          <boxGeometry args={[1.5, levelConfig.postElevatorHallway.size.height, 0.2]} />
-          <meshStandardMaterial color={levelConfig.materials.wall} />
-        </mesh>
       </group>
 
-      {/* ================================================================== */}
-      {/* DEPARTMENT HUB (branches to three departments)                     */}
-      {/* ================================================================== */}
-      <group position={levelConfig.hub.center as [number, number, number]}>
-        {/* Left wall with opening to PURSUANCE */}
-        <mesh position={[-levelConfig.hub.size.width / 2, levelConfig.hub.wallHeight / 2, 0]} castShadow>
-          <boxGeometry args={[0.2, levelConfig.hub.wallHeight, levelConfig.hub.size.depth]} />
-          <meshStandardMaterial color={levelConfig.materials.wall} />
-        </mesh>
-        
-        {/* Right wall with opening to COMPLIANCE */}
-        <mesh position={[levelConfig.hub.size.width / 2, levelConfig.hub.wallHeight / 2, 0]} castShadow>
-          <boxGeometry args={[0.2, levelConfig.hub.wallHeight, levelConfig.hub.size.depth]} />
-          <meshStandardMaterial color={levelConfig.materials.wall} />
-        </mesh>
-        
-        {/* Back corner walls */}
-        <mesh position={[-(levelConfig.hub.size.width / 2 - (levelConfig.hub.size.width / 5) / 2), levelConfig.hub.wallHeight / 2, -(levelConfig.hub.size.depth / 2)]} castShadow>
-          <boxGeometry args={[levelConfig.hub.size.width / 5, levelConfig.hub.wallHeight, 0.2]} />
-          <meshStandardMaterial color={levelConfig.materials.wall} />
-        </mesh>
-        
-        <mesh position={[levelConfig.hub.size.width / 2 - (levelConfig.hub.size.width / 5) / 2, levelConfig.hub.wallHeight / 2, -(levelConfig.hub.size.depth / 2)]} castShadow>
-          <boxGeometry args={[levelConfig.hub.size.width / 5, levelConfig.hub.wallHeight, 0.2]} />
-          <meshStandardMaterial color={levelConfig.materials.wall} />
-        </mesh>
-      </group>
-
-      {/* ================================================================== */}
-      {/* DEPARTMENT HALLWAYS (generated from config)                        */}
-      {/* ================================================================== */}
-      {levelConfig.departments.map((dept) => {
-        const hw = dept.hallway;
-        const halfWidth = hw.width / 2;
-        const halfLength = hw.length / 2;
-        
+      {/* Department labels at their configured hallway centers (if present) */}
+      {departments.map((d, idx) => {
+        const center = asVec3(d?.hallway?.center, [0, 1.4, 0]);
         return (
-          <group key={dept.id} position={hw.center as [number, number, number]}>
-            <Text
-              position={hw.labelOffset as [number, number, number]}
-              fontSize={0.5}
-              color={dept.labelColor}
-              anchorX="center"
-              anchorY="middle"
-            >
-              {dept.name}
-            </Text>
-            
-            {/* Left wall */}
-            <mesh position={[-halfWidth, hw.wallHeight / 2, halfLength]} castShadow>
-              <boxGeometry args={[0.2, hw.wallHeight, hw.length]} />
-              <meshStandardMaterial color={levelConfig.materials.wall} />
-            </mesh>
-            
-            {/* Right wall */}
-            <mesh position={[halfWidth, hw.wallHeight / 2, halfLength]} castShadow>
-              <boxGeometry args={[0.2, hw.wallHeight, hw.length]} />
-              <meshStandardMaterial color={levelConfig.materials.wall} />
-            </mesh>
-            
-            {/* End wall */}
-            <mesh position={[0, hw.wallHeight / 2, hw.length]} castShadow>
-              <boxGeometry args={[hw.width, hw.wallHeight, 0.2]} />
-              <meshStandardMaterial color={levelConfig.materials.wall} />
-            </mesh>
-            
-            {/* Back wall (entrance from hub) */}
-            {dept.entrance.wallSections ? (
-              // Special entrance with split wall sections (e.g., SURVEILLANCE)
-              dept.entrance.wallSections.map((section, idx) => (
-                <mesh 
-                  key={`wall-section-${idx}`}
-                  position={section.position as [number, number, number]} 
-                  castShadow
-                >
-                  <boxGeometry args={section.size as [number, number, number]} />
-                  <meshStandardMaterial color={levelConfig.materials.wall} />
-                </mesh>
-              ))
-            ) : (
-              // Standard solid back wall
-              <mesh position={[0, hw.wallHeight / 2, 0]} castShadow>
-                <boxGeometry args={[hw.width, hw.wallHeight, 0.2]} />
-                <meshStandardMaterial color={levelConfig.materials.wall} />
-              </mesh>
-            )}
-          </group>
+          <Text
+            key={d?.id ?? idx}
+            position={center}
+            fontSize={0.5}
+            color={d?.labelColor ?? "#d8cfa6"}
+            anchorX="center"
+            anchorY="middle"
+          >
+            {d?.name ?? "DEPARTMENT"}
+          </Text>
         );
       })}
     </>

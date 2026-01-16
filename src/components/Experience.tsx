@@ -4,6 +4,7 @@ import Scene from "./Scene";
 import IntroModal from "./IntroModal";
 import ExitModal from "./ExitModal";
 import "./Experience.css";
+import levelConfig from "../../level_config.json";
 
 interface ExperienceProps {
   onExit: () => void;
@@ -58,7 +59,9 @@ function Experience({ onExit }: ExperienceProps) {
   return (
     <div className="experience">
       {/* Band name mark */}
-      <div className="experience__brand">THE BACKROOM</div>
+      <div className="experience__brand">
+        <img src="/RB_Text.png" alt="Really Bad" />
+      </div>
 
       {/* Fullscreen button */}
       <button
@@ -80,7 +83,11 @@ function Experience({ onExit }: ExperienceProps) {
       {/* 3D Canvas */}
       <Canvas
         shadows
-        camera={{ position: [0, 1.6, 2], fov: 75 }}
+        camera={{ position: levelConfig.spawn.position as [number, number, number], fov: 75 }}
+        onCreated={({ camera }) => {
+          const r = levelConfig.spawn.rotation as [number, number, number];
+          camera.rotation.set(r[0], r[1], r[2]);
+        }}
       >
         <Scene isPaused={showIntro || showExitMenu} />
       </Canvas>
